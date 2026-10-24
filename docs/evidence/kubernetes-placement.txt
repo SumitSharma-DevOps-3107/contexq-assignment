@@ -1,0 +1,5 @@
+NAME                                                           READY   STATUS      RESTARTS   AGE    IP           NODE                           NOMINATED NODE   READINESS GATES
+corporate-pipeline-2xcck-gqnxw-head-jhl45                      1/1     Running     0          50s    10.244.0.8   ray-assignment-control-plane   <none>           <none>
+corporate-pipeline-2xcck-gqnxw-resolver-workers-worker-8hqd8   1/1     Running     0          50s    10.244.1.7   ray-assignment-worker          <none>           <none>
+corporate-pipeline-2xcck-kvmhz                                 0/1     Completed   0          34s    10.244.1.8   ray-assignment-worker          <none>           <none>
+kuberay-operator-7c889fbb4b-5w77l                              1/1     Running     0          2m2s   10.244.0.6   ray-assignment-control-plane   <none>           <none>

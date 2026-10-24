@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=75,<83"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "ray-ai-platform"
+version = "0.1.0"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+  "ray[default,data,train]==2.59.0",
+  "pyiceberg[sql-sqlite,pyarrow,glue]==0.12.0",
+  "pandas==2.3.3",
+  "scikit-learn==1.7.2",
+  "pyarrow==22.0.0",
+]
+
+[project.optional-dependencies]
+test = ["pytest==8.4.2"]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

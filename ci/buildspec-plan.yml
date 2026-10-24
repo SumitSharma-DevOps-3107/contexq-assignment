@@ -1,0 +1,10 @@
+version: 0.2
+phases:
+  install:
+    runtime-versions:
+      python: 3.11
+    commands:
+      - bash scripts/ci-install-tools.sh terraform
+  build:
+    commands:
+      - python3 scripts/ci-plan.py

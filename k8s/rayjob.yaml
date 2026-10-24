@@ -1,0 +1,111 @@
+apiVersion: ray.io/v1
+kind: RayJob
+metadata:
+  generateName: corporate-pipeline-
+  namespace: ray-assignment
+spec:
+  entrypoint: python -m ray_platform.pipeline
+  shutdownAfterJobFinishes: true
+  ttlSecondsAfterFinished: 300
+  activeDeadlineSeconds: 900
+  backoffLimit: 0
+  rayClusterSpec:
+    rayVersion: '2.59.0'
+    authOptions:
+      mode: token
+    enableInTreeAutoscaling: false
+    headGroupSpec:
+      rayStartParams:
+        dashboard-host: '0.0.0.0'
+        num-cpus: '0'
+        object-store-memory: '268435456'
+      template:
+        spec:
+          nodeSelector:
+            assignment-pool: system
+          tolerations:
+            - key: node-role.kubernetes.io/control-plane
+              effect: NoSchedule
+          containers:
+            - name: ray-head
+              image: ray-assignment:local
+              imagePullPolicy: Never
+              readinessProbe:
+                exec:
+                  command: [python, -m, ray_platform.health, 'http://localhost:8265/api/gcs_healthz', 'http://localhost:52365/api/local_raylet_healthz']
+                initialDelaySeconds: 10
+                periodSeconds: 10
+                timeoutSeconds: 5
+              livenessProbe:
+                exec:
+                  command: [python, -m, ray_platform.health, 'http://localhost:8265/api/gcs_healthz', 'http://localhost:52365/api/local_raylet_healthz']
+                initialDelaySeconds: 60
+                periodSeconds: 15
+                timeoutSeconds: 5
+                failureThreshold: 5
+              securityContext:
+                runAsUser: 1000
+                runAsNonRoot: true
+                allowPrivilegeEscalation: false
+                capabilities:
+                  drop: [ALL]
+              resources:
+                requests: {cpu: '500m', memory: '1536Mi'}
+                limits: {cpu: '1', memory: '2Gi'}
+              ports:
+                - {name: gcs-server, containerPort: 6379}
+                - {name: dashboard, containerPort: 8265}
+                - {name: client, containerPort: 10001}
+                - {name: metrics, containerPort: 8080}
+              volumeMounts:
+                - {name: output, mountPath: /output}
+                - {name: shm, mountPath: /dev/shm}
+          volumes:
+            - name: output
+              hostPath: {path: /assignment-output, type: Directory}
+            - name: shm
+              emptyDir: {medium: Memory, sizeLimit: 384Mi}
+    workerGroupSpecs:
+      - groupName: resolver-workers
+        replicas: 1
+        minReplicas: 1
+        maxReplicas: 1
+        rayStartParams:
+          num-cpus: '2'
+          resources: '"{\"entity_resolver\": 1}"'
+          object-store-memory: '402653184'
+        template:
+          spec:
+            nodeSelector:
+              assignment-pool: workers
+            containers:
+              - name: ray-worker
+                image: ray-assignment:local
+                imagePullPolicy: Never
+                readinessProbe:
+                  exec:
+                    command: [python, -m, ray_platform.health, 'http://localhost:52365/api/local_raylet_healthz']
+                  initialDelaySeconds: 10
+                  periodSeconds: 10
+                  timeoutSeconds: 5
+                livenessProbe:
+                  exec:
+                    command: [python, -m, ray_platform.health, 'http://localhost:52365/api/local_raylet_healthz']
+                  initialDelaySeconds: 60
+                  periodSeconds: 15
+                  timeoutSeconds: 5
+                  failureThreshold: 5
+                securityContext:
+                  runAsUser: 1000
+                  runAsNonRoot: true
+                  allowPrivilegeEscalation: false
+                  capabilities:
+                    drop: [ALL]
+                resources:
+                  requests: {cpu: '1', memory: '1536Mi'}
+                  limits: {cpu: '2', memory: '2Gi'}
+                volumeMounts:
+                  - {name: shm, mountPath: /dev/shm}
+            volumes:
+              - name: shm
+                emptyDir: {medium: Memory, sizeLimit: 512Mi}

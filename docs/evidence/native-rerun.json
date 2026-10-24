@@ -1,0 +1,25 @@
+{
+  "input_rows": 2400,
+  "canonical_rows": 1800,
+  "resolver": {
+    "node_id": "789d9d7b606152d8b3e50b928e0244a1a5fb1becd22e46564003393f",
+    "hostname": "Mac"
+  },
+  "iceberg": {
+    "inserted": 0,
+    "updated": 0,
+    "snapshot_id": 4745881804022341045
+  },
+  "model": {
+    "mae_usd": 20251336.708901938,
+    "r2": 0.9836349093944124,
+    "train_rows": 1440,
+    "test_rows": 360,
+    "features": [
+      "employees",
+      "company_age",
+      "assets_usd"
+    ],
+    "sample_prediction_usd": 244996595.65675148
+  }
+}
