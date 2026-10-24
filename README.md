@@ -8,7 +8,7 @@ Verified: 21 correctness/configuration/cleanup/CI safety tests, native Ray execu
 ARM64 image build, and a successful Kubernetes RayJob with dedicated actor
 placement. Three AWS runs also verify S3/Glue persistence, scoped IRSA, unchanged
 Iceberg snapshots on repeat, and worker scale-down/cold start from zero.
-See `docs/aws-validation.md`, `docs/validation.md`
+See `docs/cicd-validation.md`, `docs/aws-validation.md`, `docs/validation.md`
 and `docs/evidence/` for results; deployment instructions are in `infra/README.md`.
 
 ## Quick start

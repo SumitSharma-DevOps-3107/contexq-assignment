@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-24",
+  "region": "ap-southeast-1",
+  "local_tests_passed": 21,
+  "workflow_lint": "passed",
+  "main_plan": {
+    "url": "https://github.com/SumitSharma-DevOps-3107/contexq-assignment/actions/runs/40110205539",
+    "conclusion": "success"
+  },
+  "pull_request_plan": {
+    "url": "https://github.com/SumitSharma-DevOps-3107/contexq-assignment/actions/runs/40110528744",
+    "conclusion": "success",
+    "layers": {
+      "bootstrap": {
+        "exit_code": 0,
+        "changes": false
+      },
+      "data": {
+        "exit_code": 0,
+        "changes": false
+      },
+      "compute": {
+        "exit_code": 2,
+        "changes": true
+      },
+      "ci": {
+        "exit_code": 0,
+        "changes": false
+      },
+      "platform": {
+        "exit_code": 0,
+        "changes": false
+      }
+    }
+  },
+  "release": {
+    "url": "https://github.com/SumitSharma-DevOps-3107/contexq-assignment/actions/runs/40110196208",
+    "conclusion": "success",
+    "commit": "5662dac397e7ae3cf9fb458455444d19510eae25",
+    "status": "SUCCEEDED",
+    "image_digest": "sha256:937273fadec27ad45c9288f5cdb74788921a5236bbc3a7a2ec21ee95ff460c63"
+  },
+  "budget": {
+    "gross_limit_usd": 30,
+    "ci_posted_spend_stop_usd": 20,
+    "credits_excluded": true,
+    "lease_expires_at": "2026-10-24T17:40:01Z",
+    "billing_caveat": "Posted billing is delayed; it is not a hard real-time spending cap."
+  },
+  "notes": [
+    "No Terraform apply is performed by CI.",
+    "Compute plans contain changes requiring owner review.",
+    "Detailed plans and deployment diagnostics remain private.",
+    "RayJob cleanup verified after successful release."
+  ],
+  "final_merged_release": {
+    "url": "https://github.com/SumitSharma-DevOps-3107/contexq-assignment/actions/runs/40110801891",
+    "conclusion": "success",
+    "commit": "a8dbe573771f45b9bad7b7899621f891ec4719c7",
+    "status": "SUCCEEDED",
+    "image_digest": "sha256:20968895ad4248077ca9c15599299f4b02c6e594d1ca532302e0c16a242adeb4"
+  },
+  "cloud_ci_enabled_after_validation": false
+}
