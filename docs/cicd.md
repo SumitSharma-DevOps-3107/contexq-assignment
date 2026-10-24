@@ -125,3 +125,8 @@ Terraform VPC teardown.
 References: [GitHub AWS OIDC](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws),
 [GitHub hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners),
 [AWS CodeBuild pricing](https://aws.amazon.com/codebuild/pricing/).
+
+AWS jobs share a GitHub concurrency group across PR plans and releases. Only one
+cloud job runs at a time, matching the small CodeBuild capacity and avoiding
+overlapping plans. GitHub may replace an older pending job with a newer pending
+job; active jobs are not cancelled.

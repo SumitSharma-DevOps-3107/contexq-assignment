@@ -10,6 +10,9 @@ concurrency:
   cancel-in-progress: false
 jobs:
   release:
+    concurrency:
+      group: assignment-aws-jobs
+      cancel-in-progress: false
     if: vars.CICD_ENABLED == 'true' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04-arm
     timeout-minutes: 45

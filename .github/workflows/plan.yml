@@ -34,6 +34,9 @@ jobs:
             terraform -chdir="infra/$layer" validate
           done
   cloud-plan:
+    concurrency:
+      group: assignment-aws-jobs
+      cancel-in-progress: false
     needs: validate
     if: >-
       vars.CICD_ENABLED == 'true' &&
