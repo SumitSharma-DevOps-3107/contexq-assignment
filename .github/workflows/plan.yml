@@ -27,6 +27,8 @@ jobs:
       - run: terraform fmt -check -recursive infra
       - name: Validate all Terraform layers without AWS credentials
         run: |
+          export TF_PLUGIN_CACHE_DIR="$RUNNER_TEMP/terraform-provider-cache"
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
           for layer in bootstrap data compute ci platform; do
             terraform -chdir="infra/$layer" init -backend=false -input=false -lockfile=readonly
             terraform -chdir="infra/$layer" validate
