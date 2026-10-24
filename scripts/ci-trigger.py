@@ -51,16 +51,17 @@ def main():
                 finished = True
                 result_key = f"results/{args.mode}/{build_id.split(':', 1)[1]}/result.json"
                 result_path = Path(f"runtime/{args.mode}-result.json")
-                copied = subprocess.run(["aws", "s3", "cp", f"s3://{os.environ['CI_BUCKET']}/{result_key}", str(result_path), "--only-show-errors"])
+                private_path = Path("runtime/private-codebuild-result.json")
+                copied = subprocess.run(["aws", "s3", "cp", f"s3://{os.environ['CI_BUCKET']}/{result_key}", str(private_path), "--only-show-errors"])
                 if status != "SUCCEEDED" or copied.returncode:
                     phases = [{"phase": p["phaseType"], "status": p.get("phaseStatus"), "contexts": p.get("contexts")} for p in state.get("phases", []) if p.get("phaseStatus") in ("FAILED", "FAULT", "TIMED_OUT")]
                     print(json.dumps(phases, indent=2))
                     raise SystemExit("CodeBuild failed or result is missing; inspect the project log in AWS")
-                result = json.loads(result_path.read_text())
+                result = json.loads(private_path.read_text())
                 if args.mode == "deploy":
                     result = {"commit": result["commit"], "status": result["status"],
                               "image_digest": result["image"].split("@", 1)[1]}
-                    result_path.write_text(json.dumps(result, indent=2))
+                result_path.write_text(json.dumps(result, indent=2))
                 if summary := os.getenv("GITHUB_STEP_SUMMARY"):
                     with open(summary, "a") as stream:
                         stream.write(f"### {args.mode.title()} result\n\n```json\n{json.dumps(result, indent=2)}\n```\n")

@@ -4,7 +4,7 @@ Local-first implementation for the DevOps take-home assignment, validated on EKS
 S3, Glue and IRSA in Singapore with a total cloud spending target of $30. OIDC CI/CD is implemented;
 observability and the remaining submission work are listed below.
 
-Verified: 19 correctness/configuration/cleanup/CI safety tests, native Ray execution and idempotent rerun,
+Verified: 21 correctness/configuration/cleanup/CI safety tests, native Ray execution and idempotent rerun,
 ARM64 image build, and a successful Kubernetes RayJob with dedicated actor
 placement. Three AWS runs also verify S3/Glue persistence, scoped IRSA, unchanged
 Iceberg snapshots on repeat, and worker scale-down/cold start from zero.
