@@ -1,10 +1,10 @@
 # Ray AI Platform assignment
 
 Local-first implementation for the DevOps take-home assignment, validated on EKS,
-S3, Glue and IRSA in Singapore with a total cloud spending target of $30. CI/CD,
+S3, Glue and IRSA in Singapore with a total cloud spending target of $30. OIDC CI/CD is implemented;
 observability and the remaining submission work are listed below.
 
-Verified: 13 correctness/configuration/cleanup tests, native Ray execution and idempotent rerun,
+Verified: 21 correctness/configuration/cleanup/CI safety tests, native Ray execution and idempotent rerun,
 ARM64 image build, and a successful Kubernetes RayJob with dedicated actor
 placement. Three AWS runs also verify S3/Glue persistence, scoped IRSA, unchanged
 Iceberg snapshots on repeat, and worker scale-down/cold start from zero.
@@ -103,15 +103,15 @@ flowchart LR
   the memory monitor.
 - Local worker count is fixed at one. AWS Terraform and S3/Glue/IRSA support are
   implemented separately; see `infra/README.md` for deployment and teardown.
-  Central logs, Prometheus, CI/CD and a cloud Spot recovery test remain pending.
+  CI/CD uses GitHub OIDC and private CodeBuild jobs; see `docs/cicd.md`.
+  Central logs, Prometheus and a cloud Spot recovery test remain pending.
 - Image tags and direct dependencies are pinned. Transitive environment lock files
   are recorded after successful installation; cross-platform dependencies can differ.
 
 ## Next milestones
 
-1. Add cloud CI/CD with OIDC, PR plans, image builds and RayJob submission.
-2. Integrate distributed Ray Train and capture a Spot interruption/recovery test.
-3. Add Prometheus, centralized logs, failure/recovery evidence and a serverless
+1. Integrate distributed Ray Train and capture a Spot interruption/recovery test.
+2. Add Prometheus, centralized logs, failure/recovery evidence and a serverless
    alternative discussion. Capture the AWS demo and tear down before submission.
 
 See `docs/prerequisites.md` for the inspected machine and validation status.

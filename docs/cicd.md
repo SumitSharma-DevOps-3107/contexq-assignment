@@ -108,7 +108,8 @@ means a successful plan with changes, and 1 means failure. Detailed output is in
 `s3://<ci-bucket>/results/plan/<build-uuid>/plan.txt`, readable by the owner through
 AWS CLI. No plan is automatically applied.
 
-Release summaries contain the commit SHA, image digest, RayJob name and result.
+Public release summaries contain only the commit SHA, image digest and result.
+The RayJob name and detailed deployment diagnostics remain in the private CI bucket.
 A failed run does not undo an already committed Iceberg snapshot; re-running the
 same inputs is idempotent. For a rollback, revert the application commit on main,
 review it, and build/deploy that revision. Do not repoint an immutable image tag.
@@ -124,3 +125,8 @@ Terraform VPC teardown.
 References: [GitHub AWS OIDC](https://docs.github.com/en/actions/how-tos/secure-your-work/security-harden-deployments/oidc-in-aws),
 [GitHub hosted runners](https://docs.github.com/en/actions/reference/runners/github-hosted-runners),
 [AWS CodeBuild pricing](https://aws.amazon.com/codebuild/pricing/).
+
+AWS jobs share a GitHub concurrency group across PR plans and releases. Only one
+cloud job runs at a time, matching the small CodeBuild capacity and avoiding
+overlapping plans. GitHub may replace an older pending job with a newer pending
+job; active jobs are not cancelled.
