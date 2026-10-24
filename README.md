@@ -2,7 +2,7 @@
 
 Local-first implementation for the DevOps take-home assignment, validated on EKS,
 S3, Glue and IRSA in Singapore with a total cloud spending target of $30. OIDC CI/CD is implemented;
-observability and the remaining submission work are listed below.
+Prometheus and scoped CloudWatch log collection are implemented and tested.
 
 Verified: 21 correctness/configuration/cleanup/CI safety tests, native Ray execution and idempotent rerun,
 ARM64 image build, and a successful Kubernetes RayJob with dedicated actor
@@ -95,7 +95,8 @@ flowchart LR
   synthetic data. Do not use this hostPath/permission profile in AWS.
 - Data collection is capped at 100,000 rows. This small-data implementation is not
   a scalable distributed join. Training currently uses sklearn in the driver,
-  not distributed Ray Train; Ray Train configuration remains a subsequent milestone.
+  not distributed Ray Train; configuration and scaling guidance is documented in
+  `docs/scaling-and-alternatives.md`.
 - Head object store: 256 MiB inside 384 MiB shared memory; worker: 384 MiB inside
   512 MiB shared memory. Both pods have 2 GiB memory limits. Shared memory counts
   toward pod memory limits. A 1.5 GiB head limit caused a Ray memory-monitor failure
@@ -104,14 +105,45 @@ flowchart LR
 - Local worker count is fixed at one. AWS Terraform and S3/Glue/IRSA support are
   implemented separately; see `infra/README.md` for deployment and teardown.
   CI/CD uses GitHub OIDC and private CodeBuild jobs; see `docs/cicd.md`.
-  Central logs, Prometheus and a cloud Spot recovery test remain pending.
+  Prometheus and CloudWatch logs are tested; see `docs/observability.md`.
+  A deliberate cloud Spot interruption/recovery test remains pending.
 - Image tags and direct dependencies are pinned. Transitive environment lock files
   are recorded after successful installation; cross-platform dependencies can differ.
 
-## Next milestones
+## Cloud architecture and observability
 
-1. Integrate distributed Ray Train and capture a Spot interruption/recovery test.
-2. Add Prometheus, centralized logs, failure/recovery evidence and a serverless
-   alternative discussion. Capture the AWS demo and tear down before submission.
+```mermaid
+flowchart LR
+  GH[GitHub Actions OIDC] --> ECR[ARM image in ECR]
+  GH --> CB[Private CodeBuild job]
+  CB --> EKS[EKS and KubeRay]
+  EKS --> Head[On-Demand head/system pool]
+  EKS --> Workers[Autoscaled Spot worker pool]
+  Head --> Data[S3 and Glue Iceberg via IRSA]
+  Workers --> Data
+  Head --> Prom[Private Prometheus]
+  Workers --> Prom
+  Head --> Logs[Fluent Bit to CloudWatch via scoped IRSA]
+  Workers --> Logs
+  Owner[Owner kubectl port-forward] --> Dashboard[Token-protected Ray Dashboard]
+```
+
+Verified on EKS: head/worker metrics, `ray_tasks`, node CPU and active-cluster
+metrics, centralized head/worker logs, unauthenticated Dashboard rejection, and
+successful pipeline cleanup. See `docs/evidence/observability-validation.json`.
+Use `docs/observability.md` for local access, queries, alerts and troubleshooting.
+Prometheus retention is six hours/256MB; CloudWatch retention is three days.
+
+Ray Data/Train capacity guidance, Spot limitations and a serverless alternative
+are in `docs/scaling-and-alternatives.md`. The existing model remains a working
+CPU baseline; distributed training is a documented extension, not a tested claim.
+
+## Remaining walkthrough preparation
+
+1. Review the compute plan differences before another infrastructure apply.
+2. Optionally run a deliberate Spot interruption/recovery test in a new bounded
+   demo window; current evidence covers autoscaling and idempotent reruns.
+3. Capture the walkthrough and complete teardown. Cloud CI stays paused after
+   verification; the existing compute lease is not extended automatically.
 
 See `docs/prerequisites.md` for the inspected machine and validation status.

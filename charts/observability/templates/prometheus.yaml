@@ -1,0 +1,102 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ray-prometheus
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: ray-prometheus
+rules:
+  - apiGroups: ['']
+    resources: [pods]
+    verbs: [get, list, watch]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: ray-prometheus
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: ray-prometheus
+subjects:
+  - kind: ServiceAccount
+    name: ray-prometheus
+    namespace: {{ .Release.Namespace }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ray-prometheus
+data:
+  prometheus.yml: |
+{{ .Files.Get "files/prometheus.yml" | indent 4 }}
+  alerts.yml: |
+{{ .Files.Get "files/alerts.yml" | indent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ray-prometheus
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: {app: ray-prometheus}
+  template:
+    metadata:
+      labels: {app: ray-prometheus}
+      annotations:
+        checksum/config: {{ print (.Files.Get "files/prometheus.yml") (.Files.Get "files/alerts.yml") | sha256sum }}
+    spec:
+      serviceAccountName: ray-prometheus
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      securityContext:
+        runAsUser: 65534
+        runAsNonRoot: true
+        fsGroup: 65534
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: prometheus
+          image: {{ .Values.prometheusImage | quote }}
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+            - --storage.tsdb.retention.time=6h
+            - --storage.tsdb.retention.size=256MB
+            - --web.listen-address=:9090
+          ports:
+            - {name: http, containerPort: 9090}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: 500m, memory: 512Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          readinessProbe:
+            httpGet: {path: /-/ready, port: http}
+          livenessProbe:
+            httpGet: {path: /-/healthy, port: http}
+            initialDelaySeconds: 30
+          volumeMounts:
+            - {name: config, mountPath: /etc/prometheus, readOnly: true}
+            - {name: data, mountPath: /prometheus}
+      volumes:
+        - name: config
+          configMap: {name: ray-prometheus}
+        - name: data
+          emptyDir: {sizeLimit: 512Mi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ray-prometheus
+spec:
+  type: ClusterIP
+  selector: {app: ray-prometheus}
+  ports:
+    - {name: http, port: 9090, targetPort: http}

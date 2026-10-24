@@ -1,0 +1,4 @@
+apiVersion: v2
+name: ray-observability
+version: 0.1.0
+description: Bounded Ray metrics and assignment-only centralized logs

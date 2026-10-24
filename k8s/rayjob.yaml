@@ -16,6 +16,7 @@ spec:
     enableInTreeAutoscaling: false
     headGroupSpec:
       rayStartParams:
+        metrics-export-port: '8080'
         dashboard-host: '0.0.0.0'
         num-cpus: '0'
         object-store-memory: '268435456'
@@ -71,6 +72,7 @@ spec:
         minReplicas: 1
         maxReplicas: 1
         rayStartParams:
+          metrics-export-port: '8080'
           num-cpus: '2'
           resources: '"{\"entity_resolver\": 1}"'
           object-store-memory: '402653184'
@@ -82,6 +84,8 @@ spec:
               - name: ray-worker
                 image: ray-assignment:local
                 imagePullPolicy: Never
+                ports:
+                  - {name: metrics, containerPort: 8080}
                 readinessProbe:
                   exec:
                     command: [python, -m, ray_platform.health, 'http://localhost:52365/api/local_raylet_healthz']

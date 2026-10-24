@@ -1,0 +1,23 @@
+{
+  "job_succeeded": true,
+  "scraped_node_types": [
+    "head",
+    "worker"
+  ],
+  "metric_families": [
+    "ray_cluster_active_nodes",
+    "ray_node_cpu_utilization",
+    "ray_tasks"
+  ],
+  "dashboard_unauthenticated_status": 401,
+  "log_container_types": [
+    "ray-head",
+    "ray-worker"
+  ],
+  "memory_alert_metrics_seen": [
+    "ray_node_cgroup_mem_used",
+    "ray_node_cgroup_mem_total"
+  ],
+  "platform_plan": "no changes",
+  "promtool": "configuration and two alert rules valid"
+}

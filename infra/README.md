@@ -96,3 +96,15 @@ uses bounded Ray retries and idempotent Iceberg commits; recovery still needs a
 cloud failure test. No automatic On-Demand worker fallback is enabled. There is
 no LoadBalancer service or public Ray dashboard. Central workload logs and full
 Prometheus monitoring remain a later milestone.
+
+### Observability
+
+The platform layer now also installs the local `charts/observability` chart,
+a scoped Fluent Bit IRSA role and `/ray-assignment/pods` CloudWatch group with
+three-day retention. Apply the platform layer after compute using the same
+reviewed plan procedure. No extra node pool, NAT, public ingress or load balancer
+is required. Prometheus runs on the existing system pool; collectors tolerate
+the worker taint. Terraform fingerprints local chart content so edits cause a
+Helm upgrade. `docs/observability.md` covers access, validation and limitations.
+Destroy platform before compute to remove the Helm release cleanly; the new log
+group and logging IAM role are also platform-state resources.

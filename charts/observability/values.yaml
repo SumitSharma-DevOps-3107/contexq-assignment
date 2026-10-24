@@ -1,0 +1,9 @@
+prometheusImage: prom/prometheus:v3.5.0
+fluentBitImage: cr.fluentbit.io/fluent/fluent-bit:4.0.9
+nodeSelector:
+  assignment-pool: system
+logging:
+  enabled: false
+  region: ap-southeast-1
+  roleArn: ''
+  logGroup: /ray-assignment/pods

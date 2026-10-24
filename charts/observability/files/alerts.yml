@@ -1,0 +1,19 @@
+groups:
+  - name: ray-health
+    rules:
+      - alert: RayMetricsUnavailable
+        expr: up{job="ray"} == 0
+        for: 1m
+        labels:
+          severity: warning
+        annotations:
+          summary: Ray metrics endpoint is unreachable
+          description: Inspect the target pod readiness, port 8080, and Prometheus targets.
+      - alert: RayContainerMemoryPressure
+        expr: ray_node_cgroup_mem_used{job="ray"} / ray_node_cgroup_mem_total{job="ray"} > 0.85
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Ray container memory usage exceeds 85 percent
+          description: Reduce ingestion blocks or batch size; inspect spilling before raising memory limits.

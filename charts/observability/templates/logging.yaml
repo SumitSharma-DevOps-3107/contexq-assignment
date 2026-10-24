@@ -1,0 +1,70 @@
+{{- if .Values.logging.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ray-log-collector
+  annotations:
+    eks.amazonaws.com/role-arn: {{ .Values.logging.roleArn | quote }}
+    eks.amazonaws.com/sts-regional-endpoints: 'true'
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ray-log-collector
+data:
+  fluent-bit.conf: |
+{{ tpl (.Files.Get "files/fluent-bit.conf") . | indent 4 }}
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: ray-log-collector
+spec:
+  selector:
+    matchLabels: {app: ray-log-collector}
+  template:
+    metadata:
+      labels: {app: ray-log-collector}
+      annotations:
+        checksum/config: {{ tpl (.Files.Get "files/fluent-bit.conf") . | sha256sum }}
+    spec:
+      serviceAccountName: ray-log-collector
+      nodeSelector: {kubernetes.io/os: linux}
+      tolerations:
+        - {key: workload, operator: Equal, value: ray, effect: NoSchedule}
+      securityContext:
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: fluent-bit
+          image: {{ .Values.fluentBitImage | quote }}
+          args: [-c, /config/fluent-bit.conf]
+          env:
+            - {name: AWS_REGION, value: {{ .Values.logging.region | quote }}}
+            - {name: AWS_EC2_METADATA_DISABLED, value: 'true'}
+          ports:
+            - {name: health, containerPort: 2020}
+          resources:
+            requests: {cpu: 25m, memory: 32Mi}
+            limits: {cpu: 100m, memory: 128Mi}
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          readinessProbe:
+            httpGet: {path: /api/v1/metrics, port: health}
+          livenessProbe:
+            httpGet: {path: /api/v1/metrics, port: health}
+            initialDelaySeconds: 30
+          volumeMounts:
+            - {name: logs, mountPath: /var/log, readOnly: true}
+            - {name: config, mountPath: /config, readOnly: true}
+            - {name: buffers, mountPath: /buffers}
+      volumes:
+        - name: logs
+          hostPath: {path: /var/log, type: Directory}
+        - name: config
+          configMap: {name: ray-log-collector}
+        - name: buffers
+          emptyDir: {sizeLimit: 64Mi}
+{{- end }}

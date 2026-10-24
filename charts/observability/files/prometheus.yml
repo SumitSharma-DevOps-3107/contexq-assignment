@@ -1,0 +1,32 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+rule_files:
+  - /etc/prometheus/alerts.yml
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ['localhost:9090']
+  - job_name: ray
+    kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names: [ray-assignment]
+    relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_ray_io_node_type]
+        regex: head|worker
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_container_port_name]
+        regex: metrics
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_phase]
+        regex: Running
+        action: keep
+      - source_labels: [__meta_kubernetes_pod_name]
+        target_label: pod
+      - source_labels: [__meta_kubernetes_pod_node_name]
+        target_label: kubernetes_node
+      - source_labels: [__meta_kubernetes_pod_label_ray_io_cluster]
+        target_label: ray_cluster
+      - source_labels: [__meta_kubernetes_pod_label_ray_io_node_type]
+        target_label: ray_node_type
