@@ -11,6 +11,14 @@ variable "github_repository" {
     error_message = "Use the exact GitHub owner/repository; wildcards are forbidden."
   }
 }
+variable "github_oidc_subject_prefix" {
+  type        = string
+  description = "Exact sub_claim_prefix returned by GitHub's repository OIDC API; preserves immutable IDs."
+  validation {
+    condition     = can(regex("^repo:[A-Za-z0-9_.-]+(@[0-9]+)?/[A-Za-z0-9_.-]+(@[0-9]+)?$", var.github_oidc_subject_prefix)) && replace(var.github_oidc_subject_prefix, "/@[0-9]+/", "") == "repo:${var.github_repository}"
+    error_message = "Use this repository's exact OIDC subject prefix, including immutable IDs when enabled; no wildcards."
+  }
+}
 variable "project" { default = "ray-assignment" }
 provider "aws" {
   region              = var.region
@@ -51,7 +59,7 @@ resource "aws_iam_role" "github" {
     Action = "sts:AssumeRoleWithWebIdentity"
     Condition = { StringEquals = {
       "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-      "token.actions.githubusercontent.com:sub" = each.key == "plan" ? ["repo:${var.github_repository}:pull_request", "repo:${var.github_repository}:ref:refs/heads/main"] : ["repo:${var.github_repository}:ref:refs/heads/main"]
+      "token.actions.githubusercontent.com:sub" = each.key == "plan" ? ["${var.github_oidc_subject_prefix}:pull_request", "${var.github_oidc_subject_prefix}:ref:refs/heads/main"] : ["${var.github_oidc_subject_prefix}:ref:refs/heads/main"]
     } }
   }] })
 }

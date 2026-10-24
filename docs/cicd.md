@@ -32,6 +32,8 @@ GitHub's issuer is trusted only for this exact repository, with audience
 `sts.amazonaws.com`. The plan role accepts PR subjects and `main` for manual
 validation. The release role accepts only `refs/heads/main`. No long-lived AWS
 keys are stored in GitHub. Protect `main` against unreviewed workflow changes.
+The trust prefix is read from the repository's OIDC API, including immutable owner
+and repository IDs when GitHub enables them. It is not guessed from the URL.
 
 The existing EKS public allowlist is unchanged. CodeBuild starts small ARM
 containers inside the existing private subnets, with no inbound access, no
@@ -74,7 +76,9 @@ never included in the source archive or GitHub artifacts.
 2. Apply compute's new VPC/subnet/security-group outputs, then apply platform's
    `ci-rbac.tf`. These preserve the original API allowlist.
 3. Configure `infra/ci/terraform.tfvars.json` with `region`, `expected_account_id`,
-   `state_bucket`, and exact `github_repository`. Its backend key is
+   `state_bucket`, exact `github_repository`, and `github_oidc_subject_prefix` from
+   `gh api repos/<owner>/<repository>/actions/oidc/customization/sub`.
+   Preserve `sub_claim_prefix` exactly, including immutable IDs. Its backend key is
    `ci/terraform.tfstate`. Init, review the plan, then apply it. If the account
    already has GitHub's IAM OIDC provider, import that provider rather than
    creating a duplicate.
