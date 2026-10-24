@@ -154,7 +154,7 @@ resource "aws_iam_role_policy" "github" {
   role     = aws_iam_role.github[each.key].id
   policy = jsonencode({ Version = "2012-10-17", Statement = concat([
     { Effect = "Allow", Action = ["codebuild:StartBuild"], Resource = aws_codebuild_project.runner[each.key].arn },
-    { Effect = "Allow", Action = ["codebuild:BatchGetBuilds", "codebuild:StopBuild"], Resource = "arn:aws:codebuild:${var.region}:${local.account}:build/${var.project}-${each.key}:*" },
+    { Effect = "Allow", Action = ["codebuild:BatchGetBuilds", "codebuild:StopBuild"], Resource = aws_codebuild_project.runner[each.key].arn },
     { Effect = "Allow", Action = ["s3:PutObject"], Resource = "${module.artifacts.arn}/source/${each.key}/*" },
     { Effect = "Allow", Action = ["s3:GetObject", "s3:GetObjectVersion"], Resource = ["${module.artifacts.arn}/results/${each.key}/*", "${module.artifacts.arn}/config/environment.json"] },
     { Effect = "Allow", Action = ["budgets:ViewBudget"], Resource = "arn:aws:budgets::${local.account}:budget/${var.project}-gross-spend" }
@@ -182,6 +182,8 @@ resource "aws_iam_role_policy" "runner_base" {
 resource "aws_iam_role_policy" "plan_read" {
   role = aws_iam_role.runner["plan"].id
   policy = jsonencode({ Version = "2012-10-17", Statement = [
+    { Effect = "Allow", Action = ["budgets:ListTagsForResource"], Resource = "arn:aws:budgets::${local.account}:budget/${var.project}-gross-spend" },
+    { Effect = "Allow", Action = ["lambda:ListVersionsByFunction"], Resource = "arn:aws:lambda:${var.region}:${local.account}:function:${var.project}-lease-guard" },
     { Effect = "Allow", Action = ["s3:ListBucket"], Resource = [local.state_arn, module.artifacts.arn, data.terraform_remote_state.data.outputs.bucket_arn] },
     { Effect = "Allow", Action = ["s3:GetObject", "s3:GetObjectVersion"], Resource = ["${local.state_arn}/bootstrap/bootstrap-backup.tfstate", "${local.state_arn}/*/terraform.tfstate"] },
     { Effect = "Allow", Action = ["s3:GetBucket*", "s3:GetEncryptionConfiguration", "s3:GetLifecycleConfiguration", "s3:GetAccelerateConfiguration", "s3:GetReplicationConfiguration"], Resource = [local.state_arn, module.artifacts.arn, data.terraform_remote_state.data.outputs.bucket_arn] },
