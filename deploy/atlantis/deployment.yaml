@@ -1,0 +1,78 @@
+# Render these placeholders privately before applying. Not installed in the demo.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: atlantis-plan
+  namespace: ray-assignment
+  annotations:
+    eks.amazonaws.com/role-arn: REPLACE_WITH_DEDICATED_PLAN_INVOKER_IRSA_ARN
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: atlantis-plan
+  namespace: ray-assignment
+spec:
+  serviceName: atlantis-plan
+  replicas: 1
+  selector:
+    matchLabels: {app: atlantis-plan}
+  template:
+    metadata:
+      labels: {app: atlantis-plan}
+    spec:
+      serviceAccountName: atlantis-plan
+      nodeSelector: {assignment-pool: system}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: atlantis
+          image: REPLACE_WITH_SCANNED_ECR_IMAGE_DIGEST
+          ports: [{name: http, containerPort: 4141}]
+          envFrom:
+            - secretRef: {name: atlantis-github-app}
+            - configMapRef: {name: atlantis-private-settings}
+          env:
+            - {name: ATLANTIS_GH_APP_KEY_FILE, value: /credentials/key.pem}
+            - {name: AWS_EC2_METADATA_DISABLED, value: 'true'}
+          resources:
+            requests: {cpu: 100m, memory: 256Mi}
+            limits: {cpu: '1', memory: 512Mi}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          readinessProbe:
+            httpGet: {path: /healthz, port: http}
+          livenessProbe:
+            httpGet: {path: /healthz, port: http}
+            initialDelaySeconds: 30
+          volumeMounts:
+            - {name: data, mountPath: /atlantis-data}
+            - {name: tmp, mountPath: /tmp}
+            - {name: app-key, mountPath: /credentials, readOnly: true}
+      volumes:
+        - name: tmp
+          emptyDir: {sizeLimit: 256Mi}
+        - name: app-key
+          secret: {secretName: atlantis-github-app-key, defaultMode: 288}
+  volumeClaimTemplates:
+    - metadata: {name: data}
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: REPLACE_WITH_ENCRYPTED_STORAGE_CLASS
+        resources:
+          requests: {storage: 2Gi}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: atlantis-plan
+  namespace: ray-assignment
+spec:
+  type: ClusterIP
+  selector: {app: atlantis-plan}
+  ports: [{name: http, port: 4141, targetPort: http}]

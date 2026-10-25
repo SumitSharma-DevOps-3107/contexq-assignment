@@ -59,7 +59,7 @@ resource "aws_iam_role" "github" {
     Action = "sts:AssumeRoleWithWebIdentity"
     Condition = { StringEquals = {
       "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-      "token.actions.githubusercontent.com:sub" = each.key == "plan" ? ["${var.github_oidc_subject_prefix}:pull_request", "${var.github_oidc_subject_prefix}:ref:refs/heads/main"] : ["${var.github_oidc_subject_prefix}:ref:refs/heads/main"]
+      "token.actions.githubusercontent.com:sub" = ["${var.github_oidc_subject_prefix}:ref:refs/heads/main"]
     } }
   }] })
 }
@@ -160,7 +160,7 @@ resource "aws_iam_role_policy" "github" {
     { Effect = "Allow", Action = ["budgets:ViewBudget"], Resource = "arn:aws:budgets::${local.account}:budget/${var.project}-gross-spend" }
     ], each.key == "deploy" ? [
     { Effect = "Allow", Action = ["ecr:GetAuthorizationToken"], Resource = "*" },
-    { Effect = "Allow", Action = ["ecr:BatchCheckLayerAvailability", "ecr:InitiateLayerUpload", "ecr:UploadLayerPart", "ecr:CompleteLayerUpload", "ecr:PutImage", "ecr:BatchGetImage", "ecr:GetDownloadUrlForLayer", "ecr:DescribeImages"], Resource = local.repo_arn }
+    { Effect = "Allow", Action = ["ecr:BatchCheckLayerAvailability", "ecr:InitiateLayerUpload", "ecr:UploadLayerPart", "ecr:CompleteLayerUpload", "ecr:PutImage", "ecr:BatchGetImage", "ecr:GetDownloadUrlForLayer", "ecr:DescribeImages", "ecr:DescribeImageScanFindings"], Resource = local.repo_arn }
   ] : []) })
 }
 resource "aws_iam_role_policy" "runner_base" {

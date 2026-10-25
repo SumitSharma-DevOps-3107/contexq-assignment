@@ -34,9 +34,11 @@ resource "aws_ecr_repository" "this" {
 }
 resource "aws_ecr_lifecycle_policy" "this" {
   repository = aws_ecr_repository.this.name
+  # Tagged candidates may share a digest with golden releases. Never expire them
+  # by candidate tag: ECR expires the whole image, including its golden tag.
   policy = jsonencode({ rules = [{
-    rulePriority = 1, description = "Keep the most recent three images"
-    selection    = { tagStatus = "any", countType = "imageCountMoreThan", countNumber = 3 }
+    rulePriority = 1, description = "Expire only untagged images after seven days"
+    selection    = { tagStatus = "untagged", countType = "sinceImagePushed", countUnit = "days", countNumber = 7 }
     action       = { type = "expire" }
   }] })
 }

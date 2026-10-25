@@ -1,3 +1,7 @@
+> Security update: PR checks are credential-free. Cloud plans now run manually
+> from protected main only; live OIDC no longer trusts PR subjects. Required
+> review/checks and current blocking findings are described in `security.md`.
+
 # GitHub Actions delivery
 
 Repository: https://github.com/SumitSharma-DevOps-3107/contexq-assignment

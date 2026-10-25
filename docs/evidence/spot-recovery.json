@@ -1,0 +1,11 @@
+{
+  "fis_state": "completed",
+  "spot_request_status": "instance-terminated-by-experiment",
+  "actor_recovered_on_different_node": true,
+  "pipeline_idempotence_verified": true,
+  "rayjob_status": "SUCCEEDED",
+  "target_count": 1,
+  "target_pool": "workers",
+  "duration_before_interruption": "PT2M",
+  "elapsed_seconds": 438
+}

@@ -62,9 +62,9 @@ checkpoint training periodically and resume the entire distributed worker group
 from its latest durable checkpoint. A CPU model with no mid-training checkpoint
 must restart training. Head-node failure is also a separate recovery problem.
 
-Validated so far: worker autoscaling/cold start, scoped identity, persistent
-Iceberg/S3 results and idempotent reruns. A deliberate EC2 Spot interruption has
-not been tested; do not present pod replacement as proof of a real Spot notice.
+Validated: worker autoscaling/cold start, scoped identity, persistent Iceberg/S3
+results and idempotent reruns, plus a real FIS Spot interruption with actor
+recovery on a different worker. See `spot-validation.md` and its sanitized evidence.
 
 ## Alternative without managing Kubernetes
 

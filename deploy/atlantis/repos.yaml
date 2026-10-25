@@ -1,0 +1,15 @@
+repos:
+  - id: github.com/SumitSharma-DevOps-3107/contexq-assignment
+    workflow: private-plans
+    plan_requirements: [approved, undiverged]
+    apply_requirements: [approved, mergeable, undiverged]
+    allowed_overrides: []
+    allow_custom_workflows: false
+workflows:
+  private-plans:
+    plan:
+      steps:
+        - run: /opt/atlantis/plan-summary.sh
+    apply:
+      steps:
+        - run: 'echo "Apply is disabled on this plan-only server"; exit 1'
