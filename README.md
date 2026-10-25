@@ -154,3 +154,6 @@ Golden image gate: `docs/golden-images.md`. Atlantis is configuration-only: `dep
 Local authenticated Grafana (no ALB): `docs/local-grafana.md`.
 Prepared encryption/private-API migration: `docs/security-migration.md`.
 Peer review is temporarily paused; required CI remains enabled on the public GitHub Free repository.
+
+Reviewer walkthrough and monitoring tradeoffs: `docs/observability-demo.md`.
+Local alert firing/recovery validation: `bash scripts/test-monitoring-alerts.sh`.

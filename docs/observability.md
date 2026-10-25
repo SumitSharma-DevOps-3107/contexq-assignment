@@ -110,3 +110,12 @@ References: [Ray metrics](https://docs.ray.io/en/latest/ray-observability/refere
 [KubeRay metrics](https://docs.ray.io/en/latest/cluster/kubernetes/k8s-ecosystem/prometheus-grafana.html),
 [Ray authentication](https://docs.ray.io/en/latest/ray-core/internals/token-authentication.html),
 [Fluent Bit CloudWatch output](https://docs.fluentbit.io/manual/data-pipeline/outputs/cloudwatch).
+
+## Assignment presentation
+
+Use `docs/observability-demo.md` for the recommended stack, a repeatable walkthrough,
+and the explicit production limitations. Run `bash scripts/test-monitoring-alerts.sh`
+against local kind to verify pending/firing/resolved alert behavior using synthetic
+inputs. This is rule validation, not proof of delivered external notifications.
+The earlier AWS commands in this document require an active, authorized cloud
+window and private API connectivity; the previous EKS lease has expired.

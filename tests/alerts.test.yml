@@ -1,0 +1,58 @@
+rule_files:
+  - ../charts/observability/files/alerts.yml
+evaluation_interval: 30s
+tests:
+  - name: Endpoint failure fires after one minute and resolves on recovery
+    interval: 30s
+    input_series:
+      - series: 'up{job="ray",instance="demo:8080"}'
+        values: '1 0 0 0 1'
+    alert_rule_test:
+      - eval_time: 1m
+        alertname: RayMetricsUnavailable
+        exp_alerts: []
+      - eval_time: 1m30s
+        alertname: RayMetricsUnavailable
+        exp_alerts:
+          - exp_labels: {job: ray, instance: 'demo:8080', severity: warning}
+            exp_annotations:
+              summary: Ray metrics endpoint is unreachable
+              description: Inspect the target pod readiness, port 8080, and Prometheus targets.
+      - eval_time: 2m
+        alertname: RayMetricsUnavailable
+        exp_alerts: []
+  - name: Memory pressure must persist for two minutes
+    interval: 30s
+    input_series:
+      - series: 'ray_node_cgroup_mem_used{job="ray",instance="demo:8080"}'
+        values: '50 90 90 90 90 90 50'
+      - series: 'ray_node_cgroup_mem_total{job="ray",instance="demo:8080"}'
+        values: '100 100 100 100 100 100 100'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: RayContainerMemoryPressure
+        exp_alerts: []
+      - eval_time: 2m30s
+        alertname: RayContainerMemoryPressure
+        exp_alerts:
+          - exp_labels: {job: ray, instance: 'demo:8080', severity: warning}
+            exp_annotations:
+              summary: Ray container memory usage exceeds 85 percent
+              description: Reduce ingestion blocks or batch size; inspect spilling before raising memory limits.
+      - eval_time: 3m
+        alertname: RayContainerMemoryPressure
+        exp_alerts: []
+  - name: Idle clusters and threshold equality do not page
+    interval: 30s
+    input_series:
+      - series: 'ray_node_cgroup_mem_used{job="ray",instance="demo:8080"}'
+        values: '85 85 85 85 85 85 85'
+      - series: 'ray_node_cgroup_mem_total{job="ray",instance="demo:8080"}'
+        values: '100 100 100 100 100 100 100'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: RayContainerMemoryPressure
+        exp_alerts: []
+      - eval_time: 3m
+        alertname: RayMetricsUnavailable
+        exp_alerts: []
