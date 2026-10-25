@@ -14,3 +14,5 @@ module "state" {
   name   = "${var.project}-${var.expected_account_id}-${var.region}-state"
 }
 output "state_bucket" { value = module.state.name }
+
+output "state_key_arn" { value = module.state.key_arn }

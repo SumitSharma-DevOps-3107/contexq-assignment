@@ -1,0 +1,15 @@
+{
+  "check": "AWS-0104",
+  "resource": "aws_security_group.runner",
+  "scope": "infra/ci/main.tf only; TCP 443 IPv4 egress, no inbound rules",
+  "expires_at": "2026-11-01T00:00:00Z",
+  "source_sha256": "d1fa1ac8a3d25d754811e850487d7de7e497f673c32291bae0046261366d611b",
+  "reason": "Short assignment requires AWS APIs and public package registries within USD 30. Owner requested temporary exception; independent review deferred, not completed.",
+  "compensating_controls": [
+    "Protected-main-only AWS OIDC trust",
+    "No PR cloud credentials",
+    "Scoped IAM roles, non-privileged builds, no ingress",
+    "Cloud CI remains disabled; bounded compute lease and budget checks"
+  ],
+  "exit_criteria": "Replace with enforced destination filtering before production or expiry. An ALB is inbound access and does not meet this requirement."
+}

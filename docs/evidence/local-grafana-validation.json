@@ -1,0 +1,11 @@
+{
+  "date": "2026-10-25",
+  "context": "kind-ray-assignment",
+  "bind": "127.0.0.1:3000",
+  "anonymous_api_status": 401,
+  "authenticated_dashboard": true,
+  "datasource_health": "OK",
+  "prometheus_self_scrape_up": true,
+  "aws_resources_created": false,
+  "ray_metrics_targets_up": 4
+}

@@ -1,6 +1,6 @@
 # Prepared configuration; build and scan before deploying. No server is deployed by CI.
 FROM ghcr.io/runatlantis/atlantis:v0.48.2 AS upstream
-FROM python:3.11.14-slim-bookworm
+FROM python:3.11.17-slim-trixie@sha256:b7a9e5f6a93d6d4a31f129bbd4bdee69efccb6ded0fb230d78aafaf37af98377
 RUN apt-get update && apt-get install -y --no-install-recommends git ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
     && pip install --no-cache-dir awscli==1.42.51 \

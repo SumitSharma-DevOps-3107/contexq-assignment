@@ -12,12 +12,13 @@ def output(layer):
 def main():
     settings = {layer: json.loads(Path(f"infra/{layer}/terraform.tfvars.json").read_text())
                 for layer in ("bootstrap", "data", "compute", "ci", "platform")}
-    ci, data, compute = output("ci"), output("data"), output("compute")
+    ci, data, compute, bootstrap = output("ci"), output("data"), output("compute"), output("bootstrap")
     account = settings["compute"]["expected_account_id"]
     identity = json.loads(subprocess.check_output(["aws", "sts", "get-caller-identity"]))
     if identity["Account"] != account:
         raise SystemExit("Unexpected AWS account")
     config = {"account": account, "region": settings["compute"]["region"],
+              "state_key_arn": bootstrap["state_key_arn"],
               "state_bucket": settings["compute"]["state_bucket"], "lease_expires_at": compute["lease_expires_at"],
               "cluster": compute["cluster_name"], "tfvars": settings,
               **{key: data[key] for key in ("bucket", "database", "repository_url")}}

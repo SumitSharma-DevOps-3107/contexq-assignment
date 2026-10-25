@@ -1,0 +1,112 @@
+{{- if .Values.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ray-grafana-provisioning
+data:
+  datasources.yaml: |
+    apiVersion: 1
+    datasources:
+      - name: Ray Prometheus
+        uid: ray-prometheus
+        type: prometheus
+        access: proxy
+        url: http://ray-prometheus:9090
+        isDefault: true
+        editable: false
+  dashboards.yaml: |
+    apiVersion: 1
+    providers:
+      - name: Ray
+        type: file
+        disableDeletion: true
+        editable: false
+        options:
+          path: /etc/grafana/dashboards
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ray-grafana-dashboards
+data:
+  ray.json: |
+{{ .Files.Get "files/grafana-dashboard.json" | indent 4 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ray-grafana
+spec:
+  replicas: 1
+  strategy: {type: Recreate}
+  selector:
+    matchLabels: {app: ray-grafana}
+  template:
+    metadata:
+      labels: {app: ray-grafana}
+      annotations:
+        checksum/config: {{ printf "%s%s" (.Files.Get "files/grafana-dashboard.json") (.Values.grafana | toJson) | sha256sum }}
+    spec:
+      automountServiceAccountToken: false
+      nodeSelector:
+{{ toYaml .Values.nodeSelector | indent 8 }}
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 472
+        runAsGroup: 472
+        fsGroup: 472
+        seccompProfile: {type: RuntimeDefault}
+      containers:
+        - name: grafana
+          image: {{ .Values.grafana.image | quote }}
+          ports: [{name: http, containerPort: 3000}]
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: admin
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.grafana.adminSecret }}
+                  key: password
+            - {name: GF_AUTH_ANONYMOUS_ENABLED, value: 'false'}
+            - {name: GF_USERS_ALLOW_SIGN_UP, value: 'false'}
+            - {name: GF_ANALYTICS_REPORTING_ENABLED, value: 'false'}
+            - {name: GF_ANALYTICS_CHECK_FOR_UPDATES, value: 'false'}
+            - {name: GF_PLUGINS_PREINSTALL_DISABLED, value: 'true'}
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {drop: [ALL]}
+          resources:
+            requests: {cpu: 100m, memory: 128Mi}
+            limits: {cpu: '1', memory: 512Mi}
+          readinessProbe:
+            httpGet: {path: /api/health, port: http}
+          livenessProbe:
+            httpGet: {path: /api/health, port: http}
+            initialDelaySeconds: 30
+          volumeMounts:
+            - {name: data, mountPath: /var/lib/grafana}
+            - {name: tmp, mountPath: /tmp}
+            - {name: provisioning, mountPath: /etc/grafana/provisioning/datasources/datasources.yaml, subPath: datasources.yaml, readOnly: true}
+            - {name: provisioning, mountPath: /etc/grafana/provisioning/dashboards/dashboards.yaml, subPath: dashboards.yaml, readOnly: true}
+            - {name: dashboards, mountPath: /etc/grafana/dashboards, readOnly: true}
+      volumes:
+        - {name: data, emptyDir: {sizeLimit: 256Mi}}
+        - {name: tmp, emptyDir: {sizeLimit: 64Mi}}
+        - {name: provisioning, configMap: {name: ray-grafana-provisioning}}
+        - {name: dashboards, configMap: {name: ray-grafana-dashboards}}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ray-grafana
+spec:
+  type: ClusterIP
+  selector: {app: ray-grafana}
+  ports: [{name: http, port: 3000, targetPort: http}]
+{{- end }}

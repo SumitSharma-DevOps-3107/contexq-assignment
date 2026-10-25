@@ -69,3 +69,5 @@ output "bucket_arn" { value = module.data.arn }
 output "database" { value = aws_glue_catalog_database.this.name }
 output "repository_url" { value = aws_ecr_repository.this.repository_url }
 output "repository_name" { value = aws_ecr_repository.this.name }
+
+output "bucket_key_arn" { value = module.data.key_arn }

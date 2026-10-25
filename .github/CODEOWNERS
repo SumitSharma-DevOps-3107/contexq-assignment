@@ -1,3 +1,5 @@
+# Peer review enforcement is temporarily paused at the owner request.
+# Ownership remains documented; restore security/branch-protection-with-review.json.
 # Add a second collaborator with write access before merging owner-authored PRs.
 # GitHub uses CODEOWNERS from the base branch; first adoption uses required peer review.
 * @SumitSharma-DevOps-3107

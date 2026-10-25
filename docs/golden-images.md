@@ -37,3 +37,12 @@ The deploy role gained only `ecr:DescribeImageScanFindings` for this repository.
 Promotion uses its existing scoped `PutImage` permission. This demo does not claim
 separation of build and release identities; use a protected release environment
 and distinct promotion role for production approval separation.
+
+## Local remediation candidate (2026-10-25)
+
+The Dockerfile now pins Python 3.11.17 slim Trixie by digest. A local ARM build
+completed the application RayJob successfully. Trivy's local OS/Python scan found
+0 CRITICAL and 50 HIGH findings; Java archives were excluded from this local pass.
+This is not equivalent to a fresh ECR scan and does not authorize promotion.
+The candidate was not pushed. See `evidence/patched-image-validation.json` for
+scope and the fixable package list. Remaining findings keep the gate closed.

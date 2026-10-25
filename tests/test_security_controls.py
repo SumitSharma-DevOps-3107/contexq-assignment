@@ -37,3 +37,33 @@ def test_plan_summary_does_not_publish_resource_values():
     assert len(result) == 1
     assert 'private' not in str(result) and 'secret' not in str(result)
     assert result[0]['Resolution'] == 'Restrict destinations'
+
+def exception_module(monkeypatch):
+    monkeypatch.syspath_prepend(str(ROOT / 'scripts'))
+    return load('security_exception')
+
+
+def test_egress_exception_expires_and_cannot_cover_other_resources(monkeypatch):
+    from datetime import datetime, timezone
+    m = exception_module(monkeypatch)
+    item = {'ID': 'AWS-0104', 'CauseMetadata': {'Resource': 'aws_security_group.runner'}}
+    result = {'Target': 'ci/main.tf'}
+    assert m.permitted(result, item, ROOT / 'infra', now=datetime(2026, 10, 25, tzinfo=timezone.utc))
+    assert not m.permitted(result, item, ROOT / 'infra', now=datetime(2026, 11, 1, tzinfo=timezone.utc))
+    assert not m.permitted({'Target': 'other/main.tf'}, item, ROOT / 'infra')
+    assert not m.permitted(result, {**item, 'ID': 'AWS-0040'}, ROOT / 'infra')
+
+
+@pytest.mark.parametrize('port,ingress,layer,expected', [(443, [], 'ci', True), (80, [], 'ci', False), (443, [{}], 'ci', False), (443, [], 'compute', False)])
+def test_resolved_plan_exception_checks_actual_ports_and_ingress(monkeypatch, tmp_path, port, ingress, layer, expected):
+    import json
+    from datetime import datetime, timezone
+    m = exception_module(monkeypatch)
+    plan = tmp_path / 'plan.json'
+    plan.write_text(json.dumps({'planned_values': {'root_module': {'resources': [{
+        'address': 'aws_security_group.runner', 'values': {'ingress': ingress, 'egress': [{
+            'from_port': port, 'to_port': port, 'protocol': 'tcp', 'cidr_blocks': ['0.0.0.0/0']
+        }]}
+    }]}}}))
+    item = {'ID': 'AWS-0104', 'CauseMetadata': {'Resource': 'aws_security_group.runner'}}
+    assert m.permitted({}, item, plan, layer, datetime(2026, 10, 25, tzinfo=timezone.utc)) is expected

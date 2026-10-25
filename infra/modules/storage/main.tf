@@ -8,6 +8,22 @@ variable "expiring_prefixes" {
   default = []
 }
 
+data "aws_caller_identity" "this" {}
+data "aws_partition" "this" {}
+resource "aws_kms_key" "this" {
+  description             = "S3 encryption for ${var.name}"
+  enable_key_rotation     = true
+  deletion_window_in_days = 30
+  policy = jsonencode({ Version = "2012-10-17", Statement = [{
+    Sid       = "EnableScopedIAMPermissions", Effect = "Allow",
+    Principal = { AWS = "arn:${data.aws_partition.this.partition}:iam::${data.aws_caller_identity.this.account_id}:root" },
+    Action    = "kms:*", Resource = "*"
+  }] })
+}
+resource "aws_kms_alias" "this" {
+  name          = "alias/${var.name}"
+  target_key_id = aws_kms_key.this.key_id
+}
 resource "aws_s3_bucket" "this" {
   bucket        = var.name
   force_destroy = var.force_destroy
@@ -30,7 +46,11 @@ resource "aws_s3_bucket_versioning" "this" {
 resource "aws_s3_bucket_server_side_encryption_configuration" "this" {
   bucket = aws_s3_bucket.this.id
   rule {
-    apply_server_side_encryption_by_default { sse_algorithm = "AES256" }
+    bucket_key_enabled = true
+    apply_server_side_encryption_by_default {
+      sse_algorithm     = "aws:kms"
+      kms_master_key_id = aws_kms_key.this.arn
+    }
   }
 }
 resource "aws_s3_bucket_policy" "tls" {
@@ -70,3 +90,5 @@ resource "aws_s3_bucket_lifecycle_configuration" "this" {
 }
 output "name" { value = aws_s3_bucket.this.id }
 output "arn" { value = aws_s3_bucket.this.arn }
+
+output "key_arn" { value = aws_kms_key.this.arn }

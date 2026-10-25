@@ -33,6 +33,7 @@ data "terraform_remote_state" "data" {
   backend = "s3"
   config  = { bucket = var.state_bucket, key = "data/terraform.tfstate", region = var.region }
 }
+data "aws_kms_alias" "state" { name = "alias/${var.state_bucket}" }
 locals {
   arn         = "arn:aws"
   account     = var.expected_account_id
@@ -140,7 +141,7 @@ resource "aws_codebuild_project" "runner" {
   logs_config {
     cloudwatch_logs { group_name = aws_cloudwatch_log_group.runner[each.key].name }
   }
-  depends_on = [aws_iam_role_policy.runner_base, aws_vpc_security_group_ingress_rule.eks]
+  depends_on = [aws_iam_role_policy.runner_base, aws_iam_role_policy.runner_artifact_key, aws_vpc_security_group_ingress_rule.eks]
 }
 resource "aws_eks_access_entry" "runner" {
   for_each          = local.tasks
@@ -195,3 +196,38 @@ output "github_deploy_role" { value = aws_iam_role.github["deploy"].arn }
 output "ci_bucket" { value = module.artifacts.name }
 output "plan_project" { value = aws_codebuild_project.runner["plan"].name }
 output "deploy_project" { value = aws_codebuild_project.runner["deploy"].name }
+
+resource "aws_iam_role_policy" "github_artifact_key" {
+  for_each = local.tasks
+  role     = aws_iam_role.github[each.key].id
+  policy   = local.artifact_key_policy
+}
+resource "aws_iam_role_policy" "runner_artifact_key" {
+  for_each = local.tasks
+  role     = aws_iam_role.runner[each.key].id
+  policy   = local.artifact_key_policy
+}
+locals {
+  artifact_key_policy = jsonencode({ Version = "2012-10-17", Statement = [{
+    Effect = "Allow", Action = ["kms:Decrypt", "kms:GenerateDataKey"], Resource = module.artifacts.key_arn,
+    Condition = { StringEquals = {
+      "kms:ViaService"                   = "s3.${var.region}.amazonaws.com",
+      "kms:EncryptionContext:aws:s3:arn" = module.artifacts.arn
+    } }
+  }] })
+}
+resource "aws_iam_role_policy" "plan_keys" {
+  role = aws_iam_role.runner["plan"].id
+  policy = jsonencode({ Version = "2012-10-17", Statement = [
+    { Effect = "Allow", Action = ["kms:Decrypt"], Resource = data.aws_kms_alias.state.target_key_arn,
+      Condition = { StringEquals = {
+        "kms:ViaService"                   = "s3.${var.region}.amazonaws.com",
+        "kms:EncryptionContext:aws:s3:arn" = local.state_arn
+      } }
+    },
+    { Effect = "Allow", Action = ["kms:DescribeKey", "kms:GetKeyPolicy", "kms:GetKeyRotationStatus", "kms:ListResourceTags"],
+      Resource = [data.aws_kms_alias.state.target_key_arn, module.artifacts.key_arn,
+    data.terraform_remote_state.data.outputs.bucket_key_arn, data.terraform_remote_state.compute.outputs.cluster_key_arn] },
+    { Effect = "Allow", Action = ["kms:ListAliases"], Resource = "*" }
+  ] })
+}

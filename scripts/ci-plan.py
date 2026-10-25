@@ -25,7 +25,7 @@ def main():
         (folder / "terraform.tfvars.json").write_text(json.dumps(config["tfvars"][layer]))
         args = ["terraform", f"-chdir={folder}", "init", "-input=false", "-lockfile=readonly"]
         if layer != "bootstrap":
-            args += [f"-backend-config=bucket={config['state_bucket']}", f"-backend-config=key={layer}/terraform.tfstate", f"-backend-config=region={config['region']}", "-backend-config=encrypt=true", "-backend-config=use_lockfile=true"]
+            args += [f"-backend-config=bucket={config['state_bucket']}", f"-backend-config=key={layer}/terraform.tfstate", f"-backend-config=region={config['region']}", "-backend-config=encrypt=true", f"-backend-config=kms_key_id={config['state_key_arn']}", "-backend-config=use_lockfile=true"]
         else:
             subprocess.run(["aws", "s3", "cp", f"s3://{config['state_bucket']}/bootstrap/bootstrap-backup.tfstate", str(folder / "terraform.tfstate"), "--only-show-errors"], check=True)
         subprocess.run(args, check=True, stdout=subprocess.DEVNULL)
@@ -40,7 +40,7 @@ def main():
                 try:
                     with plan_json.open("w") as stream:
                         subprocess.run(["terraform", f"-chdir={folder}", "show", "-json", str(binary)], stdout=stream, stderr=subprocess.DEVNULL, check=True)
-                    findings = security_scan.scan(plan_json)
+                    findings = security_scan.scan(plan_json, layer=layer)
                     results[layer].update(security_passed=not findings, findings=findings)
                 except Exception:
                     # No exception text: provider/parse errors can contain resolved secrets.

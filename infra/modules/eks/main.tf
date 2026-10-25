@@ -1,7 +1,6 @@
 variable "name" { type = string }
 variable "subnet_ids" { type = list(string) }
 variable "admin_principal_arn" { type = string }
-variable "admin_cidrs" { type = list(string) }
 variable "kubernetes_version" { type = string }
 data "aws_partition" "this" {}
 
@@ -19,11 +18,20 @@ resource "aws_cloudwatch_log_group" "cluster" {
   name              = "/aws/eks/${var.name}/cluster"
   retention_in_days = 3
 }
+resource "aws_kms_key" "cluster" {
+  description             = "EKS API data encryption for ${var.name}"
+  enable_key_rotation     = true
+  deletion_window_in_days = 30
+}
 resource "aws_eks_cluster" "this" {
   name                      = var.name
   role_arn                  = aws_iam_role.cluster.arn
   version                   = var.kubernetes_version
   enabled_cluster_log_types = ["api", "audit", "authenticator"]
+  encryption_config {
+    resources = ["secrets"]
+    provider { key_arn = aws_kms_key.cluster.arn }
+  }
   access_config {
     authentication_mode                         = "API"
     bootstrap_cluster_creator_admin_permissions = false
@@ -32,8 +40,7 @@ resource "aws_eks_cluster" "this" {
   vpc_config {
     subnet_ids              = var.subnet_ids
     endpoint_private_access = true
-    endpoint_public_access  = true
-    public_access_cidrs     = var.admin_cidrs
+    endpoint_public_access  = false
   }
   depends_on = [aws_iam_role_policy_attachment.cluster, aws_cloudwatch_log_group.cluster]
 }
@@ -167,3 +174,5 @@ output "oidc_arn" { value = aws_iam_openid_connect_provider.this.arn }
 output "oidc_url" { value = aws_iam_openid_connect_provider.this.url }
 output "worker_asg_names" { value = aws_eks_node_group.workers.resources[0].autoscaling_groups[*].name }
 output "nodegroup_arns" { value = [aws_eks_node_group.system.arn, aws_eks_node_group.workers.arn] }
+
+output "key_arn" { value = aws_kms_key.cluster.arn }

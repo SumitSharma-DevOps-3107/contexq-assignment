@@ -4,7 +4,7 @@ Local-first implementation for the DevOps take-home assignment, validated on EKS
 S3, Glue and IRSA in Singapore with a total cloud spending target of $30. OIDC CI/CD is implemented;
 Prometheus and scoped CloudWatch log collection are implemented and tested.
 
-Verified: 36 correctness/configuration/cleanup/CI safety tests, native Ray execution and idempotent rerun,
+Verified: 41 correctness/configuration/cleanup/CI safety tests, native Ray execution and idempotent rerun,
 ARM64 image build, and a successful Kubernetes RayJob with dedicated actor
 placement. Three AWS runs also verify S3/Glue persistence, scoped IRSA, unchanged
 Iceberg snapshots on repeat, and worker scale-down/cold start from zero.
@@ -141,8 +141,8 @@ CPU baseline; distributed training is a documented extension, not a tested claim
 ## Remaining walkthrough preparation
 
 1. Review the compute plan differences before another infrastructure apply.
-2. Resolve the blocking IaC and container security findings in `docs/security.md`
-   and add a peer reviewer. Merge protection is enabled; the hardening PR remains gated.
+2. Review the prepared security migration and remaining container findings in
+   `docs/security.md`. Peer review is temporarily paused; required CI stays enabled.
 3. Capture the walkthrough and complete teardown. Cloud CI stays paused after
    verification; the existing compute lease is not extended automatically.
 
@@ -150,3 +150,7 @@ See `docs/prerequisites.md` for the inspected machine and validation status.
 
 Security scanning, local hooks and required merge checks: `docs/security.md`.
 Golden image gate: `docs/golden-images.md`. Atlantis is configuration-only: `deploy/atlantis/README.md`.
+
+Local authenticated Grafana (no ALB): `docs/local-grafana.md`.
+Prepared encryption/private-API migration: `docs/security-migration.md`.
+Peer review is temporarily paused; required CI remains enabled on the public GitHub Free repository.
