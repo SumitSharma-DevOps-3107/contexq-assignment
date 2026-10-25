@@ -45,6 +45,7 @@ module "network" {
 module "eks" {
   source              = "../modules/eks"
   name                = var.project
+  enable_demo_ssm     = var.enable_demo_ssm
   subnet_ids          = module.network.private_subnets
   admin_principal_arn = var.admin_principal_arn
   kubernetes_version  = var.kubernetes_version
@@ -100,3 +101,9 @@ output "private_subnets" { value = module.network.private_subnets }
 output "cluster_security_group_id" { value = module.eks.security_group_id }
 
 output "cluster_key_arn" { value = module.eks.key_arn }
+
+variable "enable_demo_ssm" {
+  type        = bool
+  default     = false
+  description = "Enable existing node SSM channels for a bounded evidence run."
+}

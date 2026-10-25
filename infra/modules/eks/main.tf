@@ -1,8 +1,3 @@
-variable "name" { type = string }
-variable "subnet_ids" { type = list(string) }
-variable "admin_principal_arn" { type = string }
-variable "kubernetes_version" { type = string }
-data "aws_partition" "this" {}
 
 resource "aws_iam_role" "cluster" {
   name = "${var.name}-cluster"
@@ -12,11 +7,11 @@ resource "aws_iam_role" "cluster" {
 }
 resource "aws_iam_role_policy_attachment" "cluster" {
   role       = aws_iam_role.cluster.name
-  policy_arn = "arn:${data.aws_partition.this.partition}:iam::aws:policy/AmazonEKSClusterPolicy"
+  policy_arn = "arn:${local.partition}:iam::aws:policy/AmazonEKSClusterPolicy"
 }
 resource "aws_cloudwatch_log_group" "cluster" {
   name              = "/aws/eks/${var.name}/cluster"
-  retention_in_days = 3
+  retention_in_days = var.log_retention_days
 }
 resource "aws_kms_key" "cluster" {
   description             = "EKS API data encryption for ${var.name}"
@@ -27,7 +22,7 @@ resource "aws_eks_cluster" "this" {
   name                      = var.name
   role_arn                  = aws_iam_role.cluster.arn
   version                   = var.kubernetes_version
-  enabled_cluster_log_types = ["api", "audit", "authenticator"]
+  enabled_cluster_log_types = var.cluster_log_types
   encryption_config {
     resources = ["secrets"]
     provider { key_arn = aws_kms_key.cluster.arn }
@@ -52,7 +47,7 @@ resource "aws_eks_access_entry" "admin" {
 resource "aws_eks_access_policy_association" "admin" {
   cluster_name  = aws_eks_cluster.this.name
   principal_arn = aws_eks_access_entry.admin.principal_arn
-  policy_arn    = "arn:${data.aws_partition.this.partition}:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
+  policy_arn    = "arn:${local.partition}:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
   access_scope { type = "cluster" }
 }
 resource "aws_iam_openid_connect_provider" "this" {
@@ -68,7 +63,7 @@ resource "aws_iam_role" "nodes" {
 resource "aws_iam_role_policy_attachment" "nodes" {
   for_each   = toset(["AmazonEKSWorkerNodePolicy", "AmazonEC2ContainerRegistryPullOnly"])
   role       = aws_iam_role.nodes.name
-  policy_arn = "arn:${data.aws_partition.this.partition}:iam::aws:policy/${each.value}"
+  policy_arn = "arn:${local.partition}:iam::aws:policy/${each.value}"
 }
 resource "aws_iam_role" "cni" {
   name = "${var.name}-cni"
@@ -76,14 +71,14 @@ resource "aws_iam_role" "cni" {
     Effect = "Allow", Principal = { Federated = aws_iam_openid_connect_provider.this.arn }
     Action = "sts:AssumeRoleWithWebIdentity"
     Condition = { StringEquals = {
-      "${replace(aws_iam_openid_connect_provider.this.url, "https://", "")}:aud" = "sts.amazonaws.com"
-      "${replace(aws_iam_openid_connect_provider.this.url, "https://", "")}:sub" = "system:serviceaccount:kube-system:aws-node"
+      "${local.oidc_issuer}:aud" = "sts.amazonaws.com"
+      "${local.oidc_issuer}:sub" = "system:serviceaccount:kube-system:aws-node"
     } }
   }] })
 }
 resource "aws_iam_role_policy_attachment" "cni" {
   role       = aws_iam_role.cni.name
-  policy_arn = "arn:${data.aws_partition.this.partition}:iam::aws:policy/AmazonEKS_CNI_Policy"
+  policy_arn = "arn:${local.partition}:iam::aws:policy/AmazonEKS_CNI_Policy"
 }
 resource "aws_eks_addon" "cni" {
   cluster_name                = aws_eks_cluster.this.name
@@ -102,19 +97,18 @@ resource "aws_launch_template" "nodes" {
   block_device_mappings {
     device_name = "/dev/xvda"
     ebs {
-      volume_size           = 20
+      volume_size           = var.node_volume_size
       volume_type           = "gp3"
       encrypted             = true
       delete_on_termination = true
     }
   }
-  tag_specifications {
-    resource_type = "instance"
-    tags          = { Project = var.name, ManagedBy = "Terraform" }
-  }
-  tag_specifications {
-    resource_type = "volume"
-    tags          = { Project = var.name, ManagedBy = "Terraform" }
+  dynamic "tag_specifications" {
+    for_each = toset(["instance", "volume"])
+    content {
+      resource_type = tag_specifications.value
+      tags          = local.tags
+    }
   }
 }
 resource "aws_eks_node_group" "system" {
@@ -123,13 +117,13 @@ resource "aws_eks_node_group" "system" {
   node_role_arn   = aws_iam_role.nodes.arn
   subnet_ids      = var.subnet_ids
   ami_type        = "AL2023_ARM_64_STANDARD"
-  instance_types  = ["m6g.large"]
+  instance_types  = var.system_pool.instance_types
   capacity_type   = "ON_DEMAND"
-  labels          = { "assignment-pool" = "system" }
+  labels          = merge(var.system_pool.labels, { "assignment-pool" = "system" })
   scaling_config {
-    desired_size = 1
-    min_size     = 1
-    max_size     = 1
+    desired_size = var.system_pool.desired_size
+    min_size     = var.system_pool.min_size
+    max_size     = var.system_pool.max_size
   }
   update_config { max_unavailable = 1 }
   launch_template {
@@ -144,18 +138,21 @@ resource "aws_eks_node_group" "workers" {
   node_role_arn   = aws_iam_role.nodes.arn
   subnet_ids      = var.subnet_ids
   ami_type        = "AL2023_ARM_64_STANDARD"
-  instance_types  = ["m6g.large", "m7g.large"]
+  instance_types  = var.workers_pool.instance_types
   capacity_type   = "SPOT"
-  labels          = { "assignment-pool" = "workers" }
-  taint {
-    key    = "workload"
-    value  = "ray"
-    effect = "NO_SCHEDULE"
+  labels          = merge(var.workers_pool.labels, { "assignment-pool" = "workers" })
+  dynamic "taint" {
+    for_each = local.worker_taints
+    content {
+      key    = taint.value.key
+      value  = taint.value.value
+      effect = taint.value.effect
+    }
   }
   scaling_config {
-    desired_size = 1
-    min_size     = 0
-    max_size     = 2
+    desired_size = var.workers_pool.desired_size
+    min_size     = var.workers_pool.min_size
+    max_size     = var.workers_pool.max_size
   }
   update_config { max_unavailable = 1 }
   launch_template {
@@ -165,14 +162,13 @@ resource "aws_eks_node_group" "workers" {
   lifecycle { ignore_changes = [scaling_config[0].desired_size] }
   depends_on = [aws_iam_role_policy_attachment.nodes, aws_eks_addon.cni]
 }
-output "name" { value = aws_eks_cluster.this.name }
-output "arn" { value = aws_eks_cluster.this.arn }
-output "endpoint" { value = aws_eks_cluster.this.endpoint }
-output "security_group_id" { value = aws_eks_cluster.this.vpc_config[0].cluster_security_group_id }
-output "ca" { value = aws_eks_cluster.this.certificate_authority[0].data }
-output "oidc_arn" { value = aws_iam_openid_connect_provider.this.arn }
-output "oidc_url" { value = aws_iam_openid_connect_provider.this.url }
-output "worker_asg_names" { value = aws_eks_node_group.workers.resources[0].autoscaling_groups[*].name }
-output "nodegroup_arns" { value = [aws_eks_node_group.system.arn, aws_eks_node_group.workers.arn] }
-
-output "key_arn" { value = aws_kms_key.cluster.arn }
+resource "aws_iam_role_policy" "demo_ssm" {
+  count = var.enable_demo_ssm ? 1 : 0
+  name  = "${var.name}-demo-ssm"
+  role  = aws_iam_role.nodes.id
+  policy = jsonencode({ Version = "2012-10-17", Statement = [{
+    Effect   = "Allow"
+    Action   = ["ssm:UpdateInstanceInformation", "ssmmessages:CreateControlChannel", "ssmmessages:CreateDataChannel", "ssmmessages:OpenControlChannel", "ssmmessages:OpenDataChannel"]
+    Resource = "*"
+  }] })
+}

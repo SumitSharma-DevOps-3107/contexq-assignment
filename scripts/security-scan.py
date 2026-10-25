@@ -15,6 +15,10 @@ def summarize(report, target=None, layer=None):
         for item in result.get("Misconfigurations", []):
             if item["Severity"] in ("HIGH", "CRITICAL") and item.get("Status", "FAIL") == "FAIL":
                 if target is not None:
+                    from plan_encryption import verified_eks_encryption
+                    if verified_eks_encryption(target, item):
+                        print("AWS-0039 independently verified from concrete plan: secrets encrypted with enabled rotated KMS key; Trivy nested-block false positive")
+                        continue
                     from security_exception import permitted
                     if permitted(result, item, target, layer):
                         print("Temporary AWS-0104 exception used for the CI runner only; expires 2026-11-01 UTC")

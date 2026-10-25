@@ -76,3 +76,17 @@ image remediation, and restored independent review remain production work.
 Sources: [Trivy Terraform scanning](https://trivy.dev/docs/latest/tutorials/misconfiguration/terraform/),
 [S3 Bucket Key encryption context](https://docs.aws.amazon.com/AmazonS3/latest/userguide/configuring-bucket-key.html),
 [GitHub protected branches](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches).
+
+## Concrete EKS plan encryption verification
+
+Trivy 0.76.1 reported AWS-0039 on the evidence recreation plan despite both
+planned_values and resource_changes containing a concrete secrets encryption
+key ARN. Removing empty unknown metadata did not resolve the diagnostic. The
+original plan is retained unchanged privately. The scanner now independently
+validates this finding with scripts/plan_encryption.py: every planned EKS cluster
+must encrypt secrets with a concrete KMS ARN referencing an enabled, rotated key
+in the same plan. Verification fails for unknown encryption, missing key resources, disabled
+rotation, disabled keys, key replacement or a second unencrypted cluster. No other finding is handled
+by this verifier. Regression tests cover these negative cases; AWS runtime
+verification remains required after deployment. This is an explicit alternate
+validation for the scanner's nested-block diagnostic, not a blanket ignore rule.

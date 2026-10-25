@@ -12,7 +12,17 @@ data "terraform_remote_state" "compute" {
   backend = "s3"
   config  = { bucket = var.state_bucket, key = "compute/terraform.tfstate", region = var.region }
 }
+variable "private_api_proxy_url" {
+  type        = string
+  default     = null
+  description = "Optional local CONNECT proxy to an authenticated SSM tunnel; TLS remains verified."
+  validation {
+    condition     = var.private_api_proxy_url == null ? true : can(regex("^http://127[.]0[.]0[.]1:[0-9]+$", var.private_api_proxy_url))
+    error_message = "The optional demo proxy must bind to IPv4 loopback."
+  }
+}
 provider "kubernetes" {
+  proxy_url              = var.private_api_proxy_url
   host                   = data.terraform_remote_state.compute.outputs.endpoint
   cluster_ca_certificate = base64decode(data.terraform_remote_state.compute.outputs.ca)
   exec {
@@ -23,6 +33,7 @@ provider "kubernetes" {
 }
 provider "helm" {
   kubernetes = {
+    proxy_url              = var.private_api_proxy_url
     host                   = data.terraform_remote_state.compute.outputs.endpoint
     cluster_ca_certificate = base64decode(data.terraform_remote_state.compute.outputs.ca)
     exec = {
