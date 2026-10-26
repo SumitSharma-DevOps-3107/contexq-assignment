@@ -1,6 +1,12 @@
-# Ray AI Platform assignment submission
+# Ray AI Platform DevOps contract submission
 
-Prepared by Sumit Sharma for the DevOps and Platform Engineering assignment.
+Prepared by Sumit Sharma for the DevOps and Platform Engineering contract role evaluation.
+
+This submission presents a tested implementation and the operational design needed
+to take it into production. The production recommendation is a private multi-AZ
+platform with recoverable batch execution and a separately tested regional recovery
+path. High availability and disaster recovery below are proposals, not deployed
+capabilities or measured service guarantees.
 
 The implementation runs a corporate data pipeline on Kubernetes using Ray Data,
 a dedicated EntityResolver actor, transactional Apache Iceberg updates and CPU
@@ -193,7 +199,7 @@ is claimed.
 
 ## Known limitations and production work
 
-The implementation is a working assignment with explicit production gaps:
+The demonstrated implementation has explicit production gaps:
 single system node and NAT, bounded worker capacity, ephemeral Prometheus storage,
 short CloudWatch retention, no external paging, no public domain/certificate and
 no HA monitoring. Localhost tunnels provide the demonstration access path.
@@ -221,6 +227,161 @@ The total AWS ceiling is USD 30 before credits. Posted gross spend was USD 4.18
 at the post-cleanup check on 26 October; usage is delayed and this is not the final bill. KMS and retained storage can continue to incur cost after compute
 cleanup. Budget alerts and lease checks supplement manual verification.
 
+## Proposed production availability
+
+The production objective is disaster resilience with verified recovery. No system
+is disaster proof. AWS manages the EKS control plane across Availability Zones;
+we remain responsible for resilient capacity, application state and dependencies.
+The following design is proposed only and is outside the USD 30 demonstration.
+
+| Failure boundary | Proposed production control | Acceptance evidence |
+|---|---|---|
+| Availability Zone | Private subnets across three Singapore AZs; On-Demand system capacity in each AZ, topology spread for replicated services and enough surviving capacity for critical jobs. Use per-AZ egress or redundant private endpoints and controlled proxies. | Remove one AZ from service under representative load; prove critical jobs meet their deadlines and private AWS access still works. |
+| Spot capacity | Diversify worker instance families and AZs; bounded task retries and durable checkpoints; allow capped On-Demand fallback for time-critical work. Set resource quotas, requests and autoscaling limits. | Interrupt workers and simulate unavailable Spot capacity; verify recovery, no duplicate commits and bounded cost. |
+| Ray head or driver | Keep one logical head per Ray cluster. An external scheduler and durable job ledger detect stalled execution, fence the old attempt and submit a replacement from a committed checkpoint or replayable input. | Kill the head during each pipeline stage; demonstrate recovery and one committed output per input batch. |
+| Cluster services | Spread CoreDNS and other replicated services; use disruption budgets for voluntary maintenance. Enable KubeRay operator replicas only with supported leader election in the pinned version. | Drain nodes, upgrade the operator and restore controllers without losing scheduling ownership. |
+
+A disruption budget does not prevent AZ loss or Spot termination. Multiple Ray
+heads are not interchangeable replicas. Ray's published GCS guidance limits
+supported Redis-backed recovery to KubeRay Ray Serve; it does not establish
+transparent recovery of this batch driver. Evaluate any GCS persistence separately
+against pinned versions. The batch recovery contract remains external job replay,
+durable state and idempotent commits. Current training restarts from the beginning;
+durable training checkpoints require application changes before claiming resume.
+
+## Proposed disaster recovery objectives
+
+Use a pilot-light secondary region for this batch workload: continuously protect
+data, images and recovery configuration, then provision compute during recovery.
+A candidate is Sydney, subject to client data residency approval, service support
+and quota verification. A warm standby is an alternative if measured provisioning
+time cannot meet the agreed recovery target. Neither option is implemented.
+
+RTO is elapsed time from service disruption to validated processing restoration,
+including detection and provisioning. RPO is the age of the latest consistent,
+recoverable data checkpoint. These starting targets require business approval
+and a timed recovery exercise; they are not an SLA or measured results.
+
+| Scenario | Proposed target and recovery unit | Qualification |
+|---|---|---|
+| Worker or single AZ loss | Restore critical processing within 30 minutes; replay uncommitted work from durable input. | No loss of acknowledged commits is a design goal, conditional on intact regional storage and catalog. Spare capacity and workload size must be tested. |
+| Regional outage | RTO four hours; RPO one hour for a verified data, catalog and job-ledger recovery checkpoint. | Asynchronous replication alone does not guarantee this RPO. Monitor checkpoint age; escalate any breach before declaring recovery ready. |
+| Corruption or accidental deletion | RTO eight hours; restore a verified clean daily recovery point, with an initial RPO target of 24 hours. | Detection delay may require an older backup and greater data loss. Retention and replayable input must cover that risk. |
+
+Protect S3 inputs, Iceberg files, models and checkpoints using versioning and
+cross-region replication, with destination KMS keys and tested restore-role access.
+Backfill pre-existing objects separately. Maintain independently retained recovery
+points in a backup account with approved immutability and retention policies;
+replication alone is not protection against every logical corruption scenario.
+
+Restore Glue catalog definitions together with their matching Iceberg metadata,
+manifests and data files. A recovery checkpoint must record snapshot IDs, metadata
+locations, required object versions, model provenance and job-ledger position.
+Iceberg file references may point to the primary bucket: validate a supported
+relocation or metadata rewrite process so secondary queries do not depend on the
+failed region. Merely copying S3 objects is not a completed database recovery.
+
+Replicate approved ECR releases and backfill required existing image digests;
+verify signatures and SBOM availability at the destination. Back up Terraform state
+and bootstrap configuration with separate recovery access. Keep state locking and
+one active infrastructure writer; do not apply from an arbitrary stale state copy.
+Recreate regional IRSA trust, secrets, KMS permissions and service configuration
+from reviewed code. Test account-compromise recovery with a separate break-glass
+identity and audit trail, independent of the primary cluster.
+
+## Regional recovery runbook proposal
+
+1. The on-call engineer starts the incident clock, identifies the failure boundary
+and informs the incident commander. The commander authorizes regional recovery
+when the service target is at risk. Disable primary scheduling and fence its write
+permissions; prove exclusive write ownership before enabling the secondary.
+
+2. The data owner selects the latest verified consistent recovery checkpoint.
+Check replication completeness, backup integrity, decryption permissions and
+recoverable catalog references. Record the actual potential data loss. If the RPO
+is exceeded, obtain a business decision rather than silently claiming compliance.
+
+3. The platform engineer provisions the secondary stack from pinned Terraform,
+images and Helm versions. Restore catalog, secrets and job ledger; verify DNS,
+network access, OIDC/IRSA, quotas and monitoring. Reconcile infrastructure state
+before any apply. Primary-region services must not be hidden dependencies.
+
+4. Run a canary that reads recovered inputs, queries an Iceberg snapshot and writes
+an isolated output. Verify row counts, checksums, identity boundaries and model
+provenance. Resume the scheduler with stable batch identifiers and bounded replay;
+confirm no duplicate commits. Record observed RTO and RPO before closing recovery.
+
+5. Fail back in a planned change window: stop new writes, reconcile snapshots and
+ledger, validate replication direction and transfer exclusive writer ownership.
+Keep rollback checkpoints, produce a post-incident report and update the runbook.
+Run quarterly recovery exercises and repeat after material platform or schema changes.
+
+## Production observability and operating model
+
+Monitor the business outcome as well as infrastructure. Agree a batch completion
+window and data freshness objective with the client; measure eligible batches
+completed correctly within that window divided by all eligible scheduled batches.
+An initial 99.5 percent monthly objective is a discussion point, not a commitment.
+Use an error budget to decide when reliability work takes priority over releases.
+
+Add alerts for missed schedules, queue age, failed or stalled jobs, data-quality
+failures, checkpoint age, replication lag, backup failures, IRSA errors, unschedulable
+pods and unexpected worker churn. Detect missing exporters as well as unhealthy
+ones: an up-equals-zero rule alone cannot cover a target removed from discovery.
+Correlate batch ID, Ray submission ID, image digest and Iceberg snapshot in logs.
+
+For a team with limited monitoring operations capacity, evaluate Amazon Managed
+Service for Prometheus and Amazon Managed Grafana with organizational SSO. An
+alternative is multi-AZ Prometheus with durable remote storage and replicated
+Grafana backed by a supported shared database. In both cases, keep alert delivery
+and an external heartbeat independent of the workload cluster. Route actionable
+alerts to an on-call service with an owner, severity, runbook and escalation.
+Choose log retention, redaction and metrics cardinality limits against audit needs
+and cost. Trace cross-service operations where it helps diagnose failed batches.
+
+Keep EKS and Ray administration private. Production dashboard access should use
+VPN or an approved access proxy, SSO and least privilege, with private DNS and a
+trusted certificate when serving HTTPS. A public domain or public ALB is not a
+prerequisite. The demonstration's authenticated localhost tunnels are adequate
+for its evidence session; they do not provide shared production access or HA.
+
+## Delivery controls and production acceptance
+
+| Workstream | Required production change | Accountable owner and gate |
+|---|---|---|
+| Release security | Remediate the recorded image findings, scan all relevant dependencies, publish an immutable signed ECR release with SBOM and provenance, and verify admission policy. Replace the expiring egress exception with tested controlled outbound access. | Security and platform owners approve scan results, exceptions and negative access tests. |
+| Change control | Restore required independent review, CODEOWNERS and passing CI before merge. Protect production environments and OIDC roles; separate plan from approved apply. Pin module releases and test upgrades and rollback in staging. | Platform owner demonstrates an unauthorized change is blocked. Select repository visibility and subscription that support required enforcement. |
+| Isolation and recovery | Separate production, nonproduction and backup/security accounts. Add default-deny network policy with tested service exceptions, secret rotation, audit logging and recovery-role access. | Security owner signs off boundaries; platform and data owners complete a timed restore exercise. |
+| Application reliability | Implement durable job ownership, replay safety and checkpoints; remove driver scaling bottlenecks; investigate observed worker turnover and test representative data volumes. | Data and ML owners verify output consistency, failure recovery and capacity limits. |
+| Service handoff | Document support hours, incident escalation, maintenance and patch cadence, dependency owners, restore procedures, quotas and cost allocation. | Client service owner accepts measured recovery results, operating costs and remaining risks. |
+
+Deliver this in stages: first close release-security and replay-safety blockers;
+then prove multi-AZ operation and alert delivery in staging; then validate regional
+recovery; finally obtain a production go-live decision with measured evidence.
+Rollback means restoring a known-good image/configuration and a compatible data
+checkpoint where required, not blindly reversing an Iceberg schema change.
+
+The USD 30 ceiling applies to the completed demonstration. Production requires a
+separately approved forecast covering three-AZ baseline capacity, egress/endpoints,
+monitoring, backup retention, cross-region transfer, KMS and any standby control
+plane. Estimate using regional pricing and representative load, and track cost per
+successful batch. No HA or DR resources were created for this proposal.
+
+## Production design references
+
+AWS EKS reliability and shared responsibility:
+https://docs.aws.amazon.com/eks/latest/best-practices/reliability.html
+
+Ray GCS recovery scope and limitations:
+https://docs.ray.io/en/latest/ray-core/fault_tolerance/gcs.html
+
+S3 replication behavior and existing-object considerations:
+https://docs.aws.amazon.com/AmazonS3/latest/userguide/replication-what-is-isnot-replicated.html
+
+References reviewed 26 October 2026. Validate behavior against pinned release
+versions before implementation. The specific architecture, recovery targets and
+operating procedures above are recommendations for client review.
+
 ## Managed alternative
 
 EventBridge Scheduler → Step Functions → Glue Spark ingestion and Iceberg updates
@@ -232,9 +393,10 @@ on-demand SageMaker training job instead of the Fargate stage.
 
 ## Validation record and handoff
 
-At the module review checkpoint, 49 pytest tests passed. On commit cd603ad,
+At the module review checkpoint, 49 pytest tests passed. On evidence-delivery commit 545e028,
 PR checks validate, security and pr-title passed; cloud-plan was intentionally
-skipped. Later module/evidence changes require their own final CI check. Historic
+skipped. The production proposal is documentation only and does not extend the
+tested cloud capabilities. Historic
 successful AWS runs include main/PR planning and merged release execution; links
 are in docs/cicd-validation.md. The submission must include this review branch,
 the final document and sanitized evidence; it should not imply PR merge or a
