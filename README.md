@@ -4,7 +4,7 @@ Local-first implementation for the DevOps take-home assignment, validated on EKS
 S3, Glue and IRSA in Singapore with a total cloud spending target of $30. OIDC CI/CD is implemented;
 Prometheus and scoped CloudWatch log collection are implemented and tested.
 
-Verified: 41 correctness/configuration/cleanup/CI safety tests, native Ray execution and idempotent rerun,
+Verified: 49 correctness/configuration/cleanup/CI safety tests, native Ray execution and idempotent rerun,
 ARM64 image build, and a successful Kubernetes RayJob with dedicated actor
 placement. Three AWS runs also verify S3/Glue persistence, scoped IRSA, unchanged
 Iceberg snapshots on repeat, and worker scale-down/cold start from zero.
@@ -138,13 +138,17 @@ Ray Data/Train capacity guidance, Spot limitations and a serverless alternative
 are in `docs/scaling-and-alternatives.md`. The existing model remains a working
 CPU baseline; distributed training is a documented extension, not a tested claim.
 
-## Remaining walkthrough preparation
+## Submission and remaining work
 
-1. Review the compute plan differences before another infrastructure apply.
-2. Review the prepared security migration and remaining container findings in
-   `docs/security.md`. Peer review is temporarily paused; required CI stays enabled.
-3. Capture the walkthrough and complete teardown. Cloud CI stays paused after
-   verification; the existing compute lease is not extended automatically.
+The submission document is in `docs/final-submission.md`, with rendered artifacts
+in `output/submission`. The reusable EKS module is in `infra/modules/eks`.
+The 26 October EKS run succeeded; screenshots, cloud API evidence and verified compute cleanup
+are recorded in `docs/evidence/eks-rehearsal`. Local UI screenshots are separately
+labeled in `docs/evidence/rehearsal`.
+
+Actual EKS Grafana, execution, driver-log and alert screenshots are saved in
+`docs/evidence/eks-rehearsal`. See `docs/eks-walkthrough.md` for private access
+and the capture procedure.
 
 See `docs/prerequisites.md` for the inspected machine and validation status.
 

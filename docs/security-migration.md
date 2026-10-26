@@ -1,4 +1,4 @@
-# Prepared security remediation — not applied to AWS
+# Security remediation and evidence deployment
 
 EKS now has a private-only API endpoint and an explicit customer-managed KMS key.
 All three storage-module buckets (state, data, CI artifacts) use their own rotated
@@ -8,8 +8,10 @@ read-only planner can decrypt state and inspect key metadata, but cannot write
 state or change keys. Generated backend config explicitly selects the state KMS
 key; `encrypt=true` alone could otherwise request SSE-S3.
 
-The existing cloud cluster was deleted by its lease. These are source changes,
-not a verified live migration. No keys or replacement cluster were created.
+The original cloud cluster was deleted by its lease. On 25 October the evidence
+run applied the state/data storage keys and recreated EKS with a private API and
+cluster KMS key. State object encryption and data-bucket defaults were verified.
+The CI artifact-key migration and old object/version rewrites remain unvalidated.
 Customer-managed keys incur recurring charges when eventually created; retain
 state/data keys as long as encrypted objects or versions exist. Do not schedule
 key deletion as routine demo compute cleanup.

@@ -1,0 +1,22 @@
+{
+  "started_at": "2026-10-25T18:06:27Z",
+  "job_name": "eks-screenshots-wcn4m",
+  "job_status": "SUCCEEDED",
+  "region": "ap-southeast-1",
+  "healthy_ray_target_types": [
+    "head",
+    "worker"
+  ],
+  "fresh_cloudwatch_container_types": [
+    "ray-head",
+    "ray-worker"
+  ],
+  "grafana_anonymous_api_status": 401,
+  "ray_anonymous_api_status": 401,
+  "alert_fixture_tests": "SUCCESS",
+  "screenshots": "blocked by desktop local-browser permission",
+  "cleanup": "Cluster absent; no active NAT gateways or allocated Elastic IPs at 2026-10-26T04:23Z",
+  "lease_expires_at": "2026-10-25T20:47:53Z",
+  "cleanup_verified_at": "2026-10-26T04:23:16Z",
+  "posted_gross_cost_usd": 3.8497123803
+}

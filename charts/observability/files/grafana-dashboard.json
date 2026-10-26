@@ -1,6 +1,6 @@
 {
   "uid": "ray-assignment",
-  "title": "Ray Assignment \u2014 Local Metrics",
+  "title": "Ray Assignment \u2014 Workload Metrics",
   "schemaVersion": 41,
   "version": 1,
   "refresh": "10s",

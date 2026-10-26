@@ -87,7 +87,7 @@ The existing `scripts/dashboard.sh` targets AWS; do not use it for this local de
 | Limited Kubernetes coverage | Ray metrics are not a full node/pod inventory; vanished targets and failed jobs are not covered by the two rules | Add kube-state-metrics, job-failure/missing-job detection and node/cAdvisor telemetry with controlled RBAC |
 | Logs are bounded | AWS retention is three days; local logs and Fluent Bit buffers can be lost | Define retention and sensitive-data filtering, persistent buffering and ingestion-failure alerts |
 | No distributed tracing | Stage-level timing, logs and Ray metrics cover this batch demo; OpenTelemetry traces were not implemented | Add correlated run IDs, structured stage logs and selected OTel spans when debugging complexity justifies it |
-| Security work remains | Candidate image has high vulnerabilities; CI HTTPS egress exception expires November 1; new KMS/private-API changes are not cloud-tested | Remediate and rescan image, implement controlled egress, validate the documented migration |
+| Security work remains | Candidate image has high vulnerabilities; CI HTTPS egress exception expires November 1; KMS/private-API changes passed the October 25 EKS run; CI artifact migration remains unvalidated | Remediate and rescan image, implement controlled egress, validate the documented migration |
 
 Avoid adding Loki, Tempo, Elasticsearch or a managed Grafana workspace solely to
 increase the tool count. They introduce storage, access, operational or billing

@@ -67,14 +67,14 @@ files and the private S3 data bucket. The deployment uses an immutable ECR diges
    instantaneous instance count. The demonstration allowance includes headroom
    for this overlap. Scale-down and cold-start events are retained as evidence.
 
-## Remaining assignment work
+## Subsequent milestones
 
-CI/CD with OIDC, Prometheus/dashboard and centralized workload logs, a deliberate
-Spot interruption/recovery test, distributed Ray Train integration, and the
-serverless alternative write-up remain separate milestones. This document proves
-the AWS storage/catalog/identity and pipeline path, not completion of those items.
+CI/CD with OIDC, Prometheus and centralized logs, a real Spot recovery test, and
+the serverless design were subsequently completed; see their dedicated validation
+documents. Distributed Ray Train remains design-only. This historical record
+proves the original storage/catalog/identity and pipeline path.
 
-The active compute lease expires at **11:10 PM IST on October 24**. Cleanup starts
+The original compute lease expired at **11:10 PM IST on October 24**. Cleanup starts
 on the following 15-minute schedule tick and is asynchronous. Use normal Terraform
 teardown in `infra/README.md` when finished; budget notifications and the lease
 guard do not provide a hard dollar cap. See `docs/aws-cost-plan.md` for estimates.
