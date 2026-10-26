@@ -1,0 +1,65 @@
+{
+  "date": "2026-10-25",
+  "region": "ap-southeast-1",
+  "cluster_version": "1.34",
+  "private_api": true,
+  "public_api": false,
+  "secrets_encryption_configured": true,
+  "platform_state_sse_kms": true,
+  "data_bucket_default_sse_kms": true,
+  "system_capacity": "ON_DEMAND",
+  "worker_capacity": "SPOT",
+  "worker_max": 2,
+  "job_status": "SUCCEEDED",
+  "input_rows": 2400,
+  "canonical_rows": 1800,
+  "inserted": 0,
+  "updated": 0,
+  "model": {
+    "mae_usd": 20239108.97755363,
+    "r2": 0.9836437055675259,
+    "train_rows": 1440,
+    "test_rows": 360,
+    "features": [
+      "employees",
+      "company_age",
+      "assets_usd"
+    ],
+    "sample_prediction_usd": 244996595.65675148
+  },
+  "image_digest": "sha256:20968895ad4248077ca9c15599299f4b02c6e594d1ca532302e0c16a242adeb4",
+  "image_qualification": "Previously tested immutable release; not golden approved",
+  "node_types": [
+    "head",
+    "worker"
+  ],
+  "metric_families": [
+    "ray_cluster_active_nodes",
+    "ray_node_cpu_utilization",
+    "ray_tasks"
+  ],
+  "cloudwatch_container_types": [
+    "ray-head",
+    "ray-worker"
+  ],
+  "cleanup": "Cluster absent; no active NAT gateways, allocated Elastic IPs or nonterminated EC2 instances found in Singapore at 2026-10-25T17:28Z. Retained storage, keys and control resources remain.",
+  "screenshots": "Not captured: browser access disabled before lease expiry",
+  "dashboard_unauthenticated_status": 401,
+  "irsa_driver_and_worker_verified": true,
+  "alert_rule_fixture_tests": "passed on EKS Prometheus",
+  "grafana": "Verified during run; cluster subsequently removed",
+  "grafana_unauthenticated_status": 401,
+  "ray_authenticated_api_success": true,
+  "source_commit": "cd603ad",
+  "tests_passed": 49,
+  "ci_checks": {
+    "validate": "passed",
+    "security": "passed",
+    "pr-title": "passed",
+    "cloud-plan": "skipped deliberately"
+  },
+  "state_bucket_read_status": 403,
+  "cleanup_verified_at": "2026-10-25T17:28:00Z",
+  "posted_gross_cost_usd": 1.9281357651,
+  "cost_is_estimated": true
+}

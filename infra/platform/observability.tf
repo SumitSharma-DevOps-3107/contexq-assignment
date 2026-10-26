@@ -1,3 +1,8 @@
+variable "enable_grafana" {
+  type        = bool
+  default     = false
+  description = "Enable private Grafana after creating ray-grafana-admin out of band; credentials never enter Terraform state."
+}
 data "aws_eks_cluster" "observability" {
   name = data.terraform_remote_state.compute.outputs.cluster_name
 }
@@ -29,6 +34,7 @@ resource "helm_release" "observability" {
   timeout   = 300
   values = [yamlencode({
     chartChecksum = sha256(join("", [for file in sort(tolist(fileset("${path.module}/../../charts/observability", "**"))) : filesha256("${path.module}/../../charts/observability/${file}")]))
+    grafana       = { enabled = var.enable_grafana }
     logging       = { enabled = true, region = var.region, roleArn = module.logging_irsa.arn, logGroup = aws_cloudwatch_log_group.ray_pods.name }
   })]
   depends_on = [module.logging_irsa]

@@ -33,7 +33,9 @@ The resolver hostname again matched the dedicated worker pod. The Ray memory
 monitor remains enabled. The failed run's diagnostic log is retained locally in
 `runtime/memory-failure.log`.
 
-## Remaining assignment validation
+## Subsequent validation
 
-Cloud identity, S3/Glue, Terraform, autoscaling, Spot interruptions, CI/CD,
-distributed Ray Train, Prometheus and central logging are not yet validated.
+AWS storage/catalog/IRSA, autoscaling, OIDC CI/CD, Prometheus, centralized logs
+and a real Spot interruption were subsequently validated. See aws-validation.md,
+cicd-validation.md, observability-demo.md and spot-validation.md for dated evidence.
+Distributed Ray Train remains a documented extension, not an executed result.

@@ -1,0 +1,30 @@
+minimum_pre_commit_version: '4.3.0'
+default_install_hook_types: [pre-commit, commit-msg]
+repos:
+  - repo: local
+    hooks:
+      - id: secrets
+        name: Scan staged changes for secrets
+        entry: .tools/gitleaks git --pre-commit --staged --redact --no-banner
+        language: system
+        pass_filenames: false
+        stages: [pre-commit]
+      - id: terraform-fmt
+        name: Check Terraform formatting (fix with terraform fmt -recursive infra)
+        entry: terraform fmt -check -recursive infra
+        language: system
+        pass_filenames: false
+        files: '\.tf$'
+        stages: [pre-commit]
+      - id: terraform-security
+        name: Scan Terraform for security findings and remediation
+        entry: python3 scripts/security-scan.py
+        language: system
+        pass_filenames: false
+        files: '^(infra/|security/|scripts/security-scan.py)'
+        stages: [pre-commit]
+      - id: commit-title
+        name: Conventional Commit message
+        entry: python3 scripts/check-title.py
+        language: system
+        stages: [commit-msg]

@@ -1,0 +1,10 @@
+**
+!deploy/
+!deploy/atlantis/
+!deploy/atlantis/Dockerfile
+!deploy/atlantis/server.yaml
+!deploy/atlantis/repos.yaml
+!deploy/atlantis/plan-summary.sh
+!scripts/
+!scripts/ci-trigger.py
+!scripts/ci_common.py

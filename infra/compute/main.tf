@@ -23,13 +23,6 @@ variable "admin_principal_arn" {
     error_message = "Use a stable IAM user/role ARN, not an STS session or root ARN."
   }
 }
-variable "admin_cidrs" {
-  type = list(string)
-  validation {
-    condition     = length(var.admin_cidrs) > 0 && alltrue([for c in var.admin_cidrs : can(cidrhost(c, 0)) && endswith(c, "/32")])
-    error_message = "Allow only explicit administrator IPv4 /32 addresses."
-  }
-}
 variable "lease_expires_at" {
   type        = string
   description = "UTC RFC3339 deadline for automatic deletion of this demo's EKS compute and NAT."
@@ -52,9 +45,9 @@ module "network" {
 module "eks" {
   source              = "../modules/eks"
   name                = var.project
+  enable_demo_ssm     = var.enable_demo_ssm
   subnet_ids          = module.network.private_subnets
   admin_principal_arn = var.admin_principal_arn
-  admin_cidrs         = var.admin_cidrs
   kubernetes_version  = var.kubernetes_version
   depends_on          = [module.network, aws_cloudwatch_event_target.lease, aws_lambda_permission.lease]
 }
@@ -71,6 +64,10 @@ module "pipeline_irsa" {
   namespace       = "ray-assignment"
   service_account = "ray-pipeline"
   policy_json = jsonencode({ Version = "2012-10-17", Statement = [
+    { Effect = "Allow", Action = ["kms:Decrypt", "kms:GenerateDataKey"], Resource = data.terraform_remote_state.data.outputs.bucket_key_arn, Condition = { StringEquals = {
+      "kms:ViaService"                   = "s3.${var.region}.amazonaws.com",
+      "kms:EncryptionContext:aws:s3:arn" = local.bucket_arn
+    } } },
     { Effect = "Allow", Action = ["s3:GetBucketLocation"], Resource = [local.bucket_arn] },
     { Effect = "Allow", Action = ["s3:ListBucket"], Resource = [local.bucket_arn], Condition = { StringLike = {
       "s3:prefix" = ["input", "input/*", "warehouse", "warehouse/*", "artifacts", "artifacts/*"]
@@ -102,3 +99,11 @@ output "lease_expires_at" { value = var.lease_expires_at }
 output "vpc_id" { value = module.network.vpc_id }
 output "private_subnets" { value = module.network.private_subnets }
 output "cluster_security_group_id" { value = module.eks.security_group_id }
+
+output "cluster_key_arn" { value = module.eks.key_arn }
+
+variable "enable_demo_ssm" {
+  type        = bool
+  default     = false
+  description = "Enable existing node SSM channels for a bounded evidence run."
+}

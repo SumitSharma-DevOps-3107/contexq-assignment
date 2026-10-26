@@ -1,0 +1,10 @@
+# Peer review enforcement is temporarily paused at the owner request.
+# Ownership remains documented; restore security/branch-protection-with-review.json.
+# Add a second collaborator with write access before merging owner-authored PRs.
+# GitHub uses CODEOWNERS from the base branch; first adoption uses required peer review.
+* @SumitSharma-DevOps-3107
+/.github/ @SumitSharma-DevOps-3107
+/security/ @SumitSharma-DevOps-3107
+/infra/ @SumitSharma-DevOps-3107
+/scripts/ @SumitSharma-DevOps-3107
+/deploy/ @SumitSharma-DevOps-3107

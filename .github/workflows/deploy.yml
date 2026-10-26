@@ -52,10 +52,17 @@ jobs:
           context: .
           platforms: linux/arm64
           push: true
-          tags: ${{ vars.ECR_REPOSITORY_URI }}:${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
-          provenance: mode=min
+          tags: ${{ vars.ECR_REPOSITORY_URI }}:build-${{ github.sha }}-${{ github.run_id }}-${{ github.run_attempt }}
+          provenance: mode=max
+          sbom: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
+      - name: Gate and promote immutable golden image
+        env:
+          IMAGE_DIGEST: ${{ steps.image.outputs.digest }}
+        run: |
+          python3 scripts/promote-image.py --repository ray-assignment --digest "$IMAGE_DIGEST" \
+            --tag "golden-${GITHUB_SHA}-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
       - name: Deploy by digest through the private API
         env:
           IMAGE_DIGEST: ${{ steps.image.outputs.digest }}

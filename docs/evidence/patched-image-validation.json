@@ -1,0 +1,20 @@
+{
+  "date": "2026-10-25",
+  "candidate": "ray-assignment:security-candidate",
+  "base": "python:3.11.17-slim-trixie",
+  "base_digest": "sha256:b7a9e5f6a93d6d4a31f129bbd4bdee69efccb6ded0fb230d78aafaf37af98377",
+  "scanner": "Trivy 0.76.1",
+  "scope": "OS and Python packages; Java archives excluded from this local scan",
+  "severity_counts": {
+    "HIGH": 50
+  },
+  "golden_eligible": false,
+  "pushed_to_ecr": false,
+  "local_rayjob_status": "SUCCEEDED",
+  "fixable_packages": [
+    "aiohttp",
+    "jaraco.context",
+    "pyarrow",
+    "wheel"
+  ]
+}

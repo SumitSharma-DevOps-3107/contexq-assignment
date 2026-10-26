@@ -54,6 +54,10 @@ spec:
       serviceAccountName: ray-prometheus
       nodeSelector:
 {{ toYaml .Values.nodeSelector | indent 8 }}
+      tolerations:
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
       securityContext:
         runAsUser: 65534
         runAsNonRoot: true

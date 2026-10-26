@@ -37,9 +37,9 @@ terraform -chdir=infra/bootstrap apply bootstrap.tfplan
 For `data`, then `compute`, then `platform`, run `init -backend-config=backend.hcl`,
 `plan -out=<layer>.tfplan`, review the plan, and `apply <layer>.tfplan`. Do not run
 platform until EKS and nodes are ready. Plans and generated settings are ignored
-by Git. Explicit account checks prevent applying to another account. Configure
-your current public `/32` IP before connecting; the API server's private endpoint
-serves worker traffic, while its public endpoint accepts only that IP.
+by Git. Explicit account checks prevent applying to another account. The current module uses a private-only EKS API. Establish private connectivity
+before applying platform resources or using kubectl. See `docs/security-migration.md`;
+the historical public `/32` route is no longer enabled.
 
 The eight-hour deadline starts when configuration is generated, not when a job
 starts. Regenerating settings preserves an existing deadline; only an explicit
@@ -92,10 +92,8 @@ unrelated account resources for cleanup.
 
 This is a short-lived demonstration: one system node and one NAT are deliberate
 cost compromises, not an HA production topology. Spot interruption resilience
-uses bounded Ray retries and idempotent Iceberg commits; recovery still needs a
-cloud failure test. No automatic On-Demand worker fallback is enabled. There is
-no LoadBalancer service or public Ray dashboard. Central workload logs and full
-Prometheus monitoring remain a later milestone.
+uses bounded Ray retries and idempotent Iceberg commits; a real FIS worker interruption was validated in `docs/spot-validation.md`. No automatic On-Demand worker fallback is enabled. There is
+no LoadBalancer service or public Ray dashboard. Prometheus and centralized CloudWatch logs have recorded AWS validation.
 
 ### Observability
 

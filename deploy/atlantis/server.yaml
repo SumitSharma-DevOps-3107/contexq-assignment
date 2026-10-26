@@ -1,0 +1,11 @@
+# Install from a reviewed image/config, never from an untrusted PR checkout.
+repo-allowlist: github.com/SumitSharma-DevOps-3107/contexq-assignment
+repo-config: /opt/atlantis/repos.yaml
+allow-commands: plan,version,unlock,cancel
+disable-autoplan: true
+allow-fork-prs: false
+allow-draft-prs: false
+automerge: false
+hide-prev-plan-comments: true
+port: 4141
+data-dir: /atlantis-data

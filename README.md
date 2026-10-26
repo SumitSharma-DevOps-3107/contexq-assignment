@@ -4,7 +4,7 @@ Local-first implementation for the DevOps take-home assignment, validated on EKS
 S3, Glue and IRSA in Singapore with a total cloud spending target of $30. OIDC CI/CD is implemented;
 Prometheus and scoped CloudWatch log collection are implemented and tested.
 
-Verified: 21 correctness/configuration/cleanup/CI safety tests, native Ray execution and idempotent rerun,
+Verified: 49 correctness/configuration/cleanup/CI safety tests, native Ray execution and idempotent rerun,
 ARM64 image build, and a successful Kubernetes RayJob with dedicated actor
 placement. Three AWS runs also verify S3/Glue persistence, scoped IRSA, unchanged
 Iceberg snapshots on repeat, and worker scale-down/cold start from zero.
@@ -106,7 +106,7 @@ flowchart LR
   implemented separately; see `infra/README.md` for deployment and teardown.
   CI/CD uses GitHub OIDC and private CodeBuild jobs; see `docs/cicd.md`.
   Prometheus and CloudWatch logs are tested; see `docs/observability.md`.
-  A deliberate cloud Spot interruption/recovery test remains pending.
+  A real FIS Spot interruption/recovery test passed; see `docs/spot-validation.md`.
 - Image tags and direct dependencies are pinned. Transitive environment lock files
   are recorded after successful installation; cross-platform dependencies can differ.
 
@@ -138,12 +138,26 @@ Ray Data/Train capacity guidance, Spot limitations and a serverless alternative
 are in `docs/scaling-and-alternatives.md`. The existing model remains a working
 CPU baseline; distributed training is a documented extension, not a tested claim.
 
-## Remaining walkthrough preparation
+## Submission and remaining work
 
-1. Review the compute plan differences before another infrastructure apply.
-2. Optionally run a deliberate Spot interruption/recovery test in a new bounded
-   demo window; current evidence covers autoscaling and idempotent reruns.
-3. Capture the walkthrough and complete teardown. Cloud CI stays paused after
-   verification; the existing compute lease is not extended automatically.
+The submission document is in `docs/final-submission.md`, with rendered artifacts
+in `output/submission`. The reusable EKS module is in `infra/modules/eks`.
+The 26 October EKS run succeeded; screenshots, cloud API evidence and verified compute cleanup
+are recorded in `docs/evidence/eks-rehearsal`. Local UI screenshots are separately
+labeled in `docs/evidence/rehearsal`.
+
+Actual EKS Grafana, execution, driver-log and alert screenshots are saved in
+`docs/evidence/eks-rehearsal`. See `docs/eks-walkthrough.md` for private access
+and the capture procedure.
 
 See `docs/prerequisites.md` for the inspected machine and validation status.
+
+Security scanning, local hooks and required merge checks: `docs/security.md`.
+Golden image gate: `docs/golden-images.md`. Atlantis is configuration-only: `deploy/atlantis/README.md`.
+
+Local authenticated Grafana (no ALB): `docs/local-grafana.md`.
+Prepared encryption/private-API migration: `docs/security-migration.md`.
+Peer review is temporarily paused; required CI remains enabled on the public GitHub Free repository.
+
+Reviewer walkthrough and monitoring tradeoffs: `docs/observability-demo.md`.
+Local alert firing/recovery validation: `bash scripts/test-monitoring-alerts.sh`.

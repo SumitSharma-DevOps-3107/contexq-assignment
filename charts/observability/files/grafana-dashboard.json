@@ -1,0 +1,127 @@
+{
+  "uid": "ray-assignment",
+  "title": "Ray Assignment \u2014 Workload Metrics",
+  "schemaVersion": 41,
+  "version": 1,
+  "refresh": "10s",
+  "time": {
+    "from": "now-30m",
+    "to": "now"
+  },
+  "tags": [
+    "ray",
+    "assignment"
+  ],
+  "panels": [
+    {
+      "id": 1,
+      "title": "Ray scrape targets",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ray-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(up{job=\"ray\"})",
+          "legendFormat": "{{State}}{{kubernetes_node}}"
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "title": "Active Ray clusters",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ray-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "count(count by (ray_cluster) (up{job=\"ray\"} == 1))",
+          "legendFormat": "{{State}}{{kubernetes_node}}"
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "title": "Ray tasks by state",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ray-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (State) (ray_tasks)",
+          "legendFormat": "{{State}}{{kubernetes_node}}"
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "title": "Node CPU utilization",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ray-prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 8,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "avg by (kubernetes_node) (ray_node_cpu_utilization)",
+          "legendFormat": "{{State}}{{kubernetes_node}}"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Prometheus scrape health",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "ray-prometheus"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 16,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "up{job=\"prometheus\"}",
+          "legendFormat": "{{State}}{{kubernetes_node}}"
+        }
+      ]
+    }
+  ]
+}

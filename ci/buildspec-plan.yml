@@ -5,6 +5,7 @@ phases:
       python: 3.11
     commands:
       - bash scripts/ci-install-tools.sh terraform
+      - python3 scripts/install-security-tools.py
   build:
     commands:
       - python3 scripts/ci-plan.py
