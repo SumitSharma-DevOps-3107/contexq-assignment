@@ -1,6 +1,6 @@
-# Ray AI Platform DevOps contract submission
+# ContexQ Assignment
 
-Prepared by Sumit Sharma for the DevOps and Platform Engineering contract role evaluation.
+Prepared by Sumit Sharma for the ContexQ DevOps assignment.
 
 This submission presents a tested implementation and the operational design needed
 to take it into production. The production recommendation is a private multi-AZ
